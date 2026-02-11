@@ -1,41 +1,143 @@
-import { useState, useRef, useMemo, useCallback } from "react";
-import { Plus, Trash2, Download, Eye } from "lucide-react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { Plus, Trash2, Download, Eye, KeyRound, UserPlus, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
+  ChartContainer, ChartTooltip, ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Bar, BarChart, XAxis, YAxis, CartesianGrid } from "recharts";
 import { generateExcel } from "@/lib/excel-generator";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import AuthDialog from "@/components/AuthDialog";
+import WelcomeDialog from "@/components/WelcomeDialog";
+import YearlyChart from "@/components/YearlyChart";
+import { format, startOfWeek, addDays } from "date-fns";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const chartConfig = {
-  percentage: {
-    label: "Completion %",
-    color: "hsl(var(--primary))",
-  },
+  percentage: { label: "Completion %", color: "hsl(var(--primary))" },
 };
+
+function getCurrentWeekStart() {
+  return startOfWeek(new Date(), { weekStartsOn: 1 });
+}
 
 const Index = () => {
   const [habits, setHabits] = useState<string[]>([]);
   const [newHabit, setNewHabit] = useState("");
-  // checkData[habitIndex][dayIndex] = boolean
   const [checkData, setCheckData] = useState<boolean[][]>([]);
   const statsRef = useRef<HTMLDivElement>(null);
+
+  // Auth state
+  const [userCodeId, setUserCodeId] = useState<string | null>(null);
+  const [userCode, setUserCode] = useState<string | null>(null);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
+  const [welcomeShown, setWelcomeShown] = useState(false);
+
+  // Yearly data
+  const [yearlyData, setYearlyData] = useState<{ weekLabel: string; percentage: number }[]>([]);
+
+  const currentWeekStart = useMemo(() => format(getCurrentWeekStart(), "yyyy-MM-dd"), []);
+
+  // Show welcome dialog on first visit
+  useEffect(() => {
+    if (!welcomeShown) {
+      const stored = localStorage.getItem("ht_welcome_shown");
+      const storedCode = localStorage.getItem("ht_user_code");
+      const storedCodeId = localStorage.getItem("ht_user_code_id");
+      if (storedCode && storedCodeId) {
+        setUserCode(storedCode);
+        setUserCodeId(storedCodeId);
+        setWelcomeShown(true);
+      } else if (!stored) {
+        setWelcomeDialogOpen(true);
+      }
+      setWelcomeShown(true);
+    }
+  }, [welcomeShown]);
+
+  // Load habits from DB when authenticated
+  useEffect(() => {
+    if (!userCodeId) return;
+    const load = async () => {
+      // Load habits
+      const { data: habitsData } = await supabase
+        .from("user_habits")
+        .select("habit_name")
+        .eq("user_code_id", userCodeId);
+      const habitNames = habitsData?.map((h) => h.habit_name) ?? [];
+      setHabits(habitNames);
+
+      // Load current week entries
+      const { data: entries } = await supabase
+        .from("habit_entries")
+        .select("habit_name, day_of_week, completed")
+        .eq("user_code_id", userCodeId)
+        .eq("week_start", currentWeekStart);
+
+      const grid = habitNames.map((habit) => {
+        return DAYS.map((_, dIdx) => {
+          const entry = entries?.find((e) => e.habit_name === habit && e.day_of_week === dIdx);
+          return entry?.completed ?? false;
+        });
+      });
+      setCheckData(grid);
+
+      // Load yearly data
+      const { data: allEntries } = await supabase
+        .from("habit_entries")
+        .select("week_start, completed")
+        .eq("user_code_id", userCodeId)
+        .order("week_start", { ascending: true });
+
+      if (allEntries && allEntries.length > 0 && habitNames.length > 0) {
+        const weekMap = new Map<string, { completed: number; total: number }>();
+        allEntries.forEach((e) => {
+          const w = e.week_start;
+          if (!weekMap.has(w)) weekMap.set(w, { completed: 0, total: 0 });
+          const entry = weekMap.get(w)!;
+          entry.total++;
+          if (e.completed) entry.completed++;
+        });
+        const yearly = Array.from(weekMap.entries()).map(([ws, v]) => ({
+          weekLabel: format(new Date(ws), "MMM d"),
+          percentage: Math.round((v.completed / v.total) * 100),
+        }));
+        setYearlyData(yearly);
+      }
+    };
+    load();
+  }, [userCodeId, currentWeekStart]);
+
+  const saveHabitToDB = useCallback(async (habitName: string) => {
+    if (!userCodeId) return;
+    await supabase.from("user_habits").upsert({ user_code_id: userCodeId, habit_name: habitName });
+  }, [userCodeId]);
+
+  const removeHabitFromDB = useCallback(async (habitName: string) => {
+    if (!userCodeId) return;
+    await supabase.from("user_habits").delete().eq("user_code_id", userCodeId).eq("habit_name", habitName);
+    await supabase.from("habit_entries").delete().eq("user_code_id", userCodeId).eq("habit_name", habitName);
+  }, [userCodeId]);
+
+  const saveEntryToDB = useCallback(async (habitName: string, dayIdx: number, completed: boolean) => {
+    if (!userCodeId) return;
+    await supabase.from("habit_entries").upsert({
+      user_code_id: userCodeId,
+      habit_name: habitName,
+      day_of_week: dayIdx,
+      week_start: currentWeekStart,
+      completed,
+    }, { onConflict: "user_code_id,habit_name,day_of_week,week_start" });
+  }, [userCodeId, currentWeekStart]);
 
   const addHabit = useCallback(() => {
     const trimmed = newHabit.trim();
@@ -47,20 +149,24 @@ const Index = () => {
     setHabits((prev) => [...prev, trimmed]);
     setCheckData((prev) => [...prev, Array(7).fill(false)]);
     setNewHabit("");
-  }, [newHabit, habits]);
+    saveHabitToDB(trimmed);
+  }, [newHabit, habits, saveHabitToDB]);
 
   const removeHabit = useCallback((index: number) => {
+    const habitName = habits[index];
     setHabits((prev) => prev.filter((_, i) => i !== index));
     setCheckData((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+    removeHabitFromDB(habitName);
+  }, [habits, removeHabitFromDB]);
 
   const toggleCheck = useCallback((hIdx: number, dIdx: number) => {
     setCheckData((prev) => {
       const next = prev.map((row) => [...row]);
       next[hIdx][dIdx] = !next[hIdx][dIdx];
+      saveEntryToDB(habits[hIdx], dIdx, next[hIdx][dIdx]);
       return next;
     });
-  }, []);
+  }, [habits, saveEntryToDB]);
 
   const dailyPcts = useMemo(() => {
     if (habits.length === 0) return DAYS.map(() => 0);
@@ -97,17 +203,58 @@ const Index = () => {
     }
   };
 
+  const handleAuthenticated = (codeId: string, code: string) => {
+    setUserCodeId(codeId);
+    setUserCode(code);
+    localStorage.setItem("ht_user_code", code);
+    localStorage.setItem("ht_user_code_id", codeId);
+  };
+
+  const handleLogout = () => {
+    setUserCodeId(null);
+    setUserCode(null);
+    setHabits([]);
+    setCheckData([]);
+    setYearlyData([]);
+    localStorage.removeItem("ht_user_code");
+    localStorage.removeItem("ht_user_code_id");
+    toast({ title: "Logged out", description: "You are now using a temporary page." });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card py-6">
-        <div className="mx-auto max-w-5xl px-4">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Weekly Habit Tracker
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Track your habits, visualize progress, and download a professional Excel report.
-          </p>
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Weekly Habit Tracker
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Track your habits, visualize progress, and download a professional Excel report.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {userCode ? (
+              <>
+                <span className="hidden text-sm text-muted-foreground sm:inline">
+                  Code: <strong className="text-foreground">{userCode}</strong>
+                </span>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="mr-1 h-4 w-4" /> Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => { setAuthDialogOpen(true); }}>
+                  <KeyRound className="mr-1 h-4 w-4" /> Enter Code
+                </Button>
+                <Button size="sm" onClick={() => { setAuthDialogOpen(true); }}>
+                  <UserPlus className="mr-1 h-4 w-4" /> Create Code
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -130,20 +277,12 @@ const Index = () => {
                 <Plus className="mr-1 h-4 w-4" /> Add
               </Button>
             </div>
-
             {habits.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
                 {habits.map((h, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 rounded-full border bg-secondary px-3 py-1 text-sm text-secondary-foreground"
-                  >
+                  <span key={i} className="inline-flex items-center gap-1 rounded-full border bg-secondary px-3 py-1 text-sm text-secondary-foreground">
                     {h}
-                    <button
-                      onClick={() => removeHabit(i)}
-                      className="ml-1 rounded-full p-0.5 hover:bg-destructive/20"
-                      aria-label={`Remove ${h}`}
-                    >
+                    <button onClick={() => removeHabit(i)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20" aria-label={`Remove ${h}`}>
                       <Trash2 className="h-3 w-3 text-destructive" />
                     </button>
                   </span>
@@ -165,9 +304,7 @@ const Index = () => {
                   <TableRow>
                     <TableHead className="w-[180px]">Habit</TableHead>
                     {DAYS.map((d) => (
-                      <TableHead key={d} className="text-center w-[80px]">
-                        {d}
-                      </TableHead>
+                      <TableHead key={d} className="w-[80px] text-center">{d}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
@@ -177,10 +314,7 @@ const Index = () => {
                       <TableCell className="font-medium">{habit}</TableCell>
                       {DAYS.map((_, dIdx) => (
                         <TableCell key={dIdx} className="text-center">
-                          <Checkbox
-                            checked={checkData[hIdx]?.[dIdx] ?? false}
-                            onCheckedChange={() => toggleCheck(hIdx, dIdx)}
-                          />
+                          <Checkbox checked={checkData[hIdx]?.[dIdx] ?? false} onCheckedChange={() => toggleCheck(hIdx, dIdx)} />
                         </TableCell>
                       ))}
                     </TableRow>
@@ -195,7 +329,6 @@ const Index = () => {
         <div ref={statsRef} className="space-y-6">
           {habits.length > 0 && (
             <>
-              {/* Daily percentages */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Daily Completion</CardTitle>
@@ -203,34 +336,21 @@ const Index = () => {
                 <CardContent>
                   <div className="grid grid-cols-7 gap-2 text-center">
                     {DAYS.map((day, i) => (
-                      <div
-                        key={day}
-                        className="rounded-lg border bg-secondary p-3"
-                      >
-                        <div className="text-xs font-medium text-muted-foreground">
-                          {day}
-                        </div>
-                        <div className="mt-1 text-xl font-bold text-foreground">
-                          {dailyPcts[i]}%
-                        </div>
+                      <div key={day} className="rounded-lg border bg-secondary p-3">
+                        <div className="text-xs font-medium text-muted-foreground">{day}</div>
+                        <div className="mt-1 text-xl font-bold text-foreground">{dailyPcts[i]}%</div>
                       </div>
                     ))}
                   </div>
-
                   <div className="mt-4 flex items-center justify-center rounded-lg border bg-accent p-4">
                     <div className="text-center">
-                      <div className="text-sm font-medium text-muted-foreground">
-                        Weekly Average
-                      </div>
-                      <div className="text-3xl font-bold text-foreground">
-                        {weeklyPct}%
-                      </div>
+                      <div className="text-sm font-medium text-muted-foreground">Weekly Average</div>
+                      <div className="text-3xl font-bold text-foreground">{weeklyPct}%</div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Chart */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Progress Chart</CardTitle>
@@ -242,17 +362,16 @@ const Index = () => {
                       <XAxis dataKey="day" />
                       <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar
-                        dataKey="percentage"
-                        fill="hsl(var(--primary))"
-                        radius={[4, 4, 0, 0]}
-                      />
+                      <Bar dataKey="percentage" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ChartContainer>
                 </CardContent>
               </Card>
             </>
           )}
+
+          {/* Yearly chart for authenticated users */}
+          {userCodeId && <YearlyChart data={yearlyData} />}
         </div>
 
         {/* Action Buttons */}
@@ -265,6 +384,26 @@ const Index = () => {
           </Button>
         </div>
       </main>
+
+      {/* Dialogs */}
+      <WelcomeDialog
+        open={welcomeDialogOpen}
+        onOpenChange={setWelcomeDialogOpen}
+        onPersonal={() => {
+          setWelcomeDialogOpen(false);
+          setAuthDialogOpen(true);
+          localStorage.setItem("ht_welcome_shown", "1");
+        }}
+        onTemporary={() => {
+          setWelcomeDialogOpen(false);
+          localStorage.setItem("ht_welcome_shown", "1");
+        }}
+      />
+      <AuthDialog
+        open={authDialogOpen}
+        onOpenChange={setAuthDialogOpen}
+        onAuthenticated={handleAuthenticated}
+      />
     </div>
   );
 };
