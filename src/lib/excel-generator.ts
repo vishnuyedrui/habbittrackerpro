@@ -31,22 +31,41 @@ export async function generateExcel(
 
   // -- Data rows --
   habits.forEach((habit, hIdx) => {
-    const rowData: (string | boolean)[] = [habit];
-    DAYS.forEach((_, dIdx) => {
-      rowData.push(checkData[hIdx]?.[dIdx] ?? false);
-    });
-    const row = sheet.addRow(rowData);
+    const row = sheet.addRow([habit]);
     row.alignment = { horizontal: "center", vertical: "middle" };
     row.getCell(1).alignment = { horizontal: "left", vertical: "middle" };
+    row.getCell(1).font = { size: 11 };
 
-    // alternating fill
+    // alternating fill for habit name cell
     if (hIdx % 2 === 0) {
-      row.fill = {
+      row.getCell(1).fill = {
         type: "pattern",
         pattern: "solid",
         fgColor: { argb: "FFF0F4FF" },
       };
     }
+
+    DAYS.forEach((_, dIdx) => {
+      const cell = row.getCell(dIdx + 2);
+      const checked = checkData[hIdx]?.[dIdx] ?? false;
+      cell.value = checked;
+      // Visual styling based on value
+      if (checked) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFC8E6C9" }, // green
+        };
+        cell.font = { bold: true, size: 12, color: { argb: "FF2E7D32" } };
+      } else {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: hIdx % 2 === 0 ? "FFF0F4FF" : "FFFFFFFF" },
+        };
+        cell.font = { size: 11, color: { argb: "FF9E9E9E" } };
+      }
+    });
 
     row.eachCell((cell) => {
       cell.border = {
