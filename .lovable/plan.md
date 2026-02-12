@@ -1,47 +1,75 @@
 
 
-# Weekly Habit Tracker Excel Generator
+# Week Selector, Visual Redesign, Mobile Responsiveness & PWA
 
-## Overview
-A clean, modern single-page app where users manage weekly habits, visualize completion stats, and download a professionally formatted Excel file — all client-side (no backend needed since ExcelJS runs in the browser).
+## 1. Week Selector
 
-## Page Layout
+Add navigation arrows and a date display above the tracking table so users can move between weeks.
 
-### 1. Header
-- App title "Weekly Habit Tracker" with a clean, professional look
+- Add `selectedWeekStart` state (defaults to current week's Monday)
+- Left/right arrow buttons to go to previous/next week (using `addWeeks` from date-fns)
+- Display the week range (e.g., "Feb 10 - Feb 16, 2026")
+- Disable "next" button if already on the current week
+- When the selected week changes, load that week's entries from the database (for authenticated users)
+- `saveEntryToDB` uses the selected week instead of always the current week
+- For temporary users, only the current week is available (arrows hidden or disabled)
 
-### 2. Habit Input Section
-- Text input + "Add Habit" button to dynamically add habits
-- List of added habits with delete buttons
-- Ability to add unlimited habits
+## 2. Visual Design Overhaul
 
-### 3. Weekly Tracking Table
-- Table with columns: Habit Name | Mon | Tue | Wed | Thu | Fri | Sat | Sun
-- Checkboxes for each habit × day cell
-- Clean alternating row styling
+### Custom Color Palette
+Update CSS variables in `src/index.css` with a modern, vibrant palette:
+- **Primary**: Indigo/violet tones (e.g., `243 75% 59%`)
+- **Accent**: Teal/emerald for success indicators
+- **Cards**: Subtle gradient backgrounds or soft shadows
+- **Chart bars**: Gradient fills instead of flat colors
 
-### 4. Live Stats Dashboard
-- **Daily completion percentages** shown below the table (one per day)
-- **Overall weekly completion %** displayed prominently
-- **Bar chart** (using Recharts) showing Mon–Sun daily percentages, updating live as checkboxes are toggled
+### Animations (via tailwind.config.ts)
+Add keyframes and utility classes:
+- `fade-in` for cards appearing on load
+- `scale-in` for stat cards
+- Smooth checkbox toggle transitions
+- Hover effects on habit chips and buttons (scale, shadow lift)
 
-### 5. Action Buttons
-- **Preview** — scrolls to / highlights the stats dashboard
-- **Download Excel** — generates and downloads a professional .xlsx file
+### Polish
+- Add a gradient or colored header bar
+- Rounded stat cards with colored borders based on completion percentage (red/yellow/green)
+- Better typography hierarchy
+- Subtle card hover shadows
+- Progress ring or colored badge for the weekly average
 
-## Excel File Details (generated client-side with ExcelJS)
-- Sheet named "Habit Tracker"
-- Habit table with TRUE/FALSE values
-- Daily percentage row with Excel formulas (COUNTIF/COUNTA)
-- Weekly average formula
-- Professional formatting: bold headers, borders, auto column widths, frozen top row, percentage formatting
-- Embedded bar chart (Mon–Sun vs %) that auto-updates when values change in Excel
-- Dashboard-style appearance inspired by the reference image
+## 3. Mobile Responsiveness
 
-## Technical Approach
-- **All client-side** — no backend needed. ExcelJS supports full Excel generation including charts in the browser
-- ExcelJS npm package for .xlsx creation with formulas, formatting, and charts
-- Recharts for the live preview chart
-- Tailwind CSS for styling
-- React state to manage habits and checkbox data
+- **Header**: Stack title and auth buttons vertically on small screens
+- **Tracking Table**: Wrap in a horizontal scroll container on mobile, or switch to a card-based layout per habit
+- **Daily Completion Grid**: Change from `grid-cols-7` to `grid-cols-4` on small screens, then `grid-cols-7` on larger
+- **Chart**: Already responsive via Recharts `ResponsiveContainer`
+- **Action Buttons**: Full-width stacking on mobile
+- **Week Selector**: Compact layout with smaller buttons on mobile
+
+## 4. PWA (Installable Web App)
+
+- Install `vite-plugin-pwa`
+- Configure in `vite.config.ts` with app manifest (name, icons, theme color, display: standalone)
+- Add `navigateFallbackDenylist: [/^\/~oauth/]` to workbox config
+- Add PWA meta tags to `index.html` (theme-color, apple-touch-icon)
+- Create basic PWA icons in `public/` folder (192x192 and 512x512)
+- The app will then be installable from mobile browsers via "Add to Home Screen"
+
+## Technical Details
+
+### Files to Create
+- `src/components/WeekSelector.tsx` -- navigation arrows + week label
+
+### Files to Modify
+- `src/index.css` -- new color palette with vibrant, modern HSL values
+- `tailwind.config.ts` -- add animation keyframes (fade-in, scale-in, slide-in)
+- `src/pages/Index.tsx` -- integrate WeekSelector, apply responsive classes, animate cards, use selectedWeekStart for data loading
+- `src/components/YearlyChart.tsx` -- apply new chart colors
+- `index.html` -- update title, add PWA meta tags
+- `vite.config.ts` -- add vite-plugin-pwa configuration
+- `src/components/AuthDialog.tsx` -- minor styling polish
+- `src/components/WelcomeDialog.tsx` -- minor styling polish
+
+### New Dependencies
+- `vite-plugin-pwa` -- for PWA support
 
