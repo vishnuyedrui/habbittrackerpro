@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
-import { Plus, Trash2, Download, Eye, KeyRound, UserPlus, LogOut } from "lucide-react";
+import { Plus, Trash2, Download, Eye, KeyRound, UserPlus, LogOut, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 import AuthDialog from "@/components/AuthDialog";
 import WelcomeDialog from "@/components/WelcomeDialog";
 import YearlyChart from "@/components/YearlyChart";
-import { format, startOfWeek, addDays } from "date-fns";
+import WeekSelector from "@/components/WeekSelector";
+import { format, startOfWeek, addWeeks, isSameWeek } from "date-fns";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -42,10 +43,14 @@ const Index = () => {
   const [welcomeDialogOpen, setWelcomeDialogOpen] = useState(false);
   const [welcomeShown, setWelcomeShown] = useState(false);
 
+  // Week navigation
+  const [selectedWeek, setSelectedWeek] = useState<Date>(getCurrentWeekStart());
+  const currentWeekDate = useMemo(() => getCurrentWeekStart(), []);
+  const selectedWeekStart = useMemo(() => format(selectedWeek, "yyyy-MM-dd"), [selectedWeek]);
+  const canGoNext = !isSameWeek(selectedWeek, currentWeekDate, { weekStartsOn: 1 });
+
   // Yearly data
   const [yearlyData, setYearlyData] = useState<{ weekLabel: string; percentage: number }[]>([]);
-
-  const currentWeekStart = useMemo(() => format(getCurrentWeekStart(), "yyyy-MM-dd"), []);
 
   // Show welcome dialog on first visit
   useEffect(() => {
@@ -64,11 +69,10 @@ const Index = () => {
     }
   }, [welcomeShown]);
 
-  // Load habits from DB when authenticated
+  // Load habits from DB when authenticated or week changes
   useEffect(() => {
     if (!userCodeId) return;
     const load = async () => {
-      // Load habits
       const { data: habitsData } = await supabase
         .from("user_habits")
         .select("habit_name")
@@ -76,12 +80,11 @@ const Index = () => {
       const habitNames = habitsData?.map((h) => h.habit_name) ?? [];
       setHabits(habitNames);
 
-      // Load current week entries
       const { data: entries } = await supabase
         .from("habit_entries")
         .select("habit_name, day_of_week, completed")
         .eq("user_code_id", userCodeId)
-        .eq("week_start", currentWeekStart);
+        .eq("week_start", selectedWeekStart);
 
       const grid = habitNames.map((habit) => {
         return DAYS.map((_, dIdx) => {
@@ -91,7 +94,6 @@ const Index = () => {
       });
       setCheckData(grid);
 
-      // Load yearly data
       const { data: allEntries } = await supabase
         .from("habit_entries")
         .select("week_start, completed")
@@ -115,7 +117,7 @@ const Index = () => {
       }
     };
     load();
-  }, [userCodeId, currentWeekStart]);
+  }, [userCodeId, selectedWeekStart]);
 
   const saveHabitToDB = useCallback(async (habitName: string) => {
     if (!userCodeId) return;
@@ -134,10 +136,10 @@ const Index = () => {
       user_code_id: userCodeId,
       habit_name: habitName,
       day_of_week: dayIdx,
-      week_start: currentWeekStart,
+      week_start: selectedWeekStart,
       completed,
     }, { onConflict: "user_code_id,habit_name,day_of_week,week_start" });
-  }, [userCodeId, currentWeekStart]);
+  }, [userCodeId, selectedWeekStart]);
 
   const addHabit = useCallback(() => {
     const trimmed = newHabit.trim();
@@ -221,13 +223,20 @@ const Index = () => {
     toast({ title: "Logged out", description: "You are now using a temporary page." });
   };
 
+  const getPctColor = (pct: number) => {
+    if (pct >= 80) return "border-success/50 bg-success/5";
+    if (pct >= 50) return "border-warning/50 bg-warning/5";
+    return "border-destructive/30 bg-destructive/5";
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card py-6">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+      <header className="border-b bg-gradient-to-r from-primary/5 via-card to-accent/5 py-6">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="animate-fade-in">
+            <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              <Zap className="h-6 w-6 text-primary sm:h-7 sm:w-7" />
               Weekly Habit Tracker
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -246,10 +255,10 @@ const Index = () => {
               </>
             ) : (
               <>
-                <Button variant="outline" size="sm" onClick={() => { setAuthDialogOpen(true); }}>
+                <Button variant="outline" size="sm" onClick={() => setAuthDialogOpen(true)}>
                   <KeyRound className="mr-1 h-4 w-4" /> Enter Code
                 </Button>
-                <Button size="sm" onClick={() => { setAuthDialogOpen(true); }}>
+                <Button size="sm" onClick={() => setAuthDialogOpen(true)}>
                   <UserPlus className="mr-1 h-4 w-4" /> Create Code
                 </Button>
               </>
@@ -258,31 +267,49 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-8 px-4 py-8">
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:space-y-8 sm:py-8">
+        {/* Week Selector */}
+        <div className="animate-fade-in">
+          <WeekSelector
+            weekStart={selectedWeek}
+            onPrevious={() => setSelectedWeek((w) => addWeeks(w, -1))}
+            onNext={() => setSelectedWeek((w) => addWeeks(w, 1))}
+            canGoNext={canGoNext}
+            isAuthenticated={!!userCodeId}
+          />
+        </div>
+
         {/* Add Habit */}
-        <Card>
+        <Card className="animate-fade-in transition-shadow hover:shadow-md">
           <CardHeader>
             <CardTitle className="text-lg">Add Habits</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 placeholder="e.g. Exercise, Read, Meditate..."
                 value={newHabit}
                 onChange={(e) => setNewHabit(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addHabit()}
-                className="max-w-md"
+                className="sm:max-w-md"
               />
-              <Button onClick={addHabit}>
+              <Button onClick={addHabit} className="w-full sm:w-auto">
                 <Plus className="mr-1 h-4 w-4" /> Add
               </Button>
             </div>
             {habits.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
                 {habits.map((h, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 rounded-full border bg-secondary px-3 py-1 text-sm text-secondary-foreground">
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 rounded-full border bg-secondary px-3 py-1 text-sm text-secondary-foreground transition-transform hover:scale-105"
+                  >
                     {h}
-                    <button onClick={() => removeHabit(i)} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20" aria-label={`Remove ${h}`}>
+                    <button
+                      onClick={() => removeHabit(i)}
+                      className="ml-1 rounded-full p-0.5 transition-colors hover:bg-destructive/20"
+                      aria-label={`Remove ${h}`}
+                    >
                       <Trash2 className="h-3 w-3 text-destructive" />
                     </button>
                   </span>
@@ -294,17 +321,17 @@ const Index = () => {
 
         {/* Tracking Table */}
         {habits.length > 0 && (
-          <Card>
+          <Card className="animate-fade-in transition-shadow hover:shadow-md">
             <CardHeader>
               <CardTitle className="text-lg">Weekly Tracking</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[180px]">Habit</TableHead>
+                    <TableHead className="min-w-[120px]">Habit</TableHead>
                     {DAYS.map((d) => (
-                      <TableHead key={d} className="w-[80px] text-center">{d}</TableHead>
+                      <TableHead key={d} className="w-[60px] text-center sm:w-[80px]">{d}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
@@ -314,7 +341,11 @@ const Index = () => {
                       <TableCell className="font-medium">{habit}</TableCell>
                       {DAYS.map((_, dIdx) => (
                         <TableCell key={dIdx} className="text-center">
-                          <Checkbox checked={checkData[hIdx]?.[dIdx] ?? false} onCheckedChange={() => toggleCheck(hIdx, dIdx)} />
+                          <Checkbox
+                            checked={checkData[hIdx]?.[dIdx] ?? false}
+                            onCheckedChange={() => toggleCheck(hIdx, dIdx)}
+                            className="transition-transform hover:scale-110"
+                          />
                         </TableCell>
                       ))}
                     </TableRow>
@@ -329,20 +360,23 @@ const Index = () => {
         <div ref={statsRef} className="space-y-6">
           {habits.length > 0 && (
             <>
-              <Card>
+              <Card className="animate-fade-in transition-shadow hover:shadow-md">
                 <CardHeader>
                   <CardTitle className="text-lg">Daily Completion</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-7 gap-2 text-center">
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
                     {DAYS.map((day, i) => (
-                      <div key={day} className="rounded-lg border bg-secondary p-3">
+                      <div
+                        key={day}
+                        className={`rounded-lg border p-3 text-center transition-all hover:shadow-sm ${getPctColor(dailyPcts[i])}`}
+                      >
                         <div className="text-xs font-medium text-muted-foreground">{day}</div>
-                        <div className="mt-1 text-xl font-bold text-foreground">{dailyPcts[i]}%</div>
+                        <div className="mt-1 text-lg font-bold text-foreground sm:text-xl">{dailyPcts[i]}%</div>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-4 flex items-center justify-center rounded-lg border bg-accent p-4">
+                  <div className={`mt-4 flex items-center justify-center rounded-lg border p-4 transition-all ${getPctColor(weeklyPct)}`}>
                     <div className="text-center">
                       <div className="text-sm font-medium text-muted-foreground">Weekly Average</div>
                       <div className="text-3xl font-bold text-foreground">{weeklyPct}%</div>
@@ -351,18 +385,18 @@ const Index = () => {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="animate-fade-in transition-shadow hover:shadow-md">
                 <CardHeader>
                   <CardTitle className="text-lg">Progress Chart</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                  <ChartContainer config={chartConfig} className="h-[250px] w-full sm:h-[300px]">
                     <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="day" />
-                      <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                      <XAxis dataKey="day" tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                      <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fill: "hsl(var(--muted-foreground))" }} />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="percentage" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="percentage" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ChartContainer>
                 </CardContent>
@@ -370,16 +404,15 @@ const Index = () => {
             </>
           )}
 
-          {/* Yearly chart for authenticated users */}
           {userCodeId && <YearlyChart data={yearlyData} />}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 pb-12">
-          <Button variant="outline" onClick={handlePreview} disabled={habits.length === 0}>
+        <div className="flex flex-col gap-3 pb-12 sm:flex-row">
+          <Button variant="outline" onClick={handlePreview} disabled={habits.length === 0} className="w-full sm:w-auto">
             <Eye className="mr-1 h-4 w-4" /> Preview
           </Button>
-          <Button onClick={handleDownload} disabled={habits.length === 0}>
+          <Button onClick={handleDownload} disabled={habits.length === 0} className="w-full sm:w-auto">
             <Download className="mr-1 h-4 w-4" /> Download Excel
           </Button>
         </div>
