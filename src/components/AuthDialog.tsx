@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { KeyRound, UserPlus } from "lucide-react";
+import { KeyRound, UserPlus, Sparkles } from "lucide-react";
 
 interface AuthDialogProps {
   open: boolean;
@@ -86,8 +86,13 @@ export default function AuthDialog({ open, onOpenChange, onAuthenticated }: Auth
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{mode === "enter" ? "Enter Your Code" : "Create Your Code"}</DialogTitle>
-          <DialogDescription>
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Sparkles className="h-6 w-6 text-primary" />
+          </div>
+          <DialogTitle className="text-center">
+            {mode === "enter" ? "Enter Your Code" : "Create Your Code"}
+          </DialogTitle>
+          <DialogDescription className="text-center">
             {mode === "enter"
               ? "Enter your unique code to access your personal habit tracker."
               : "Create a unique code to save your progress and access it anytime."}
@@ -103,6 +108,7 @@ export default function AuthDialog({ open, onOpenChange, onAuthenticated }: Auth
               value={code}
               onChange={(e) => setCode(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (mode === "enter" ? handleEnterCode() : handleCreateCode())}
+              className="mt-1.5"
             />
           </div>
 
@@ -121,13 +127,13 @@ export default function AuthDialog({ open, onOpenChange, onAuthenticated }: Auth
           <div className="text-center text-sm text-muted-foreground">
             {mode === "enter" ? (
               <>Don't have a code?{" "}
-                <button onClick={() => { setMode("create"); setCode(""); }} className="text-primary underline">
+                <button onClick={() => { setMode("create"); setCode(""); }} className="font-medium text-primary hover:underline">
                   Create one
                 </button>
               </>
             ) : (
               <>Already have a code?{" "}
-                <button onClick={() => { setMode("enter"); setCode(""); }} className="text-primary underline">
+                <button onClick={() => { setMode("enter"); setCode(""); }} className="font-medium text-primary hover:underline">
                   Enter it
                 </button>
               </>
