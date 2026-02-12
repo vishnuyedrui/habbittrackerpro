@@ -1,11 +1,10 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
-import { Plus, Trash2, Download, Eye, KeyRound, UserPlus, LogOut, Zap } from "lucide-react";
+import { Plus, Download, Eye, KeyRound, UserPlus, LogOut, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table, TableBody, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -18,7 +17,8 @@ import AuthDialog from "@/components/AuthDialog";
 import WelcomeDialog from "@/components/WelcomeDialog";
 import YearlyChart from "@/components/YearlyChart";
 import WeekSelector from "@/components/WeekSelector";
-import { format, startOfWeek, addWeeks, isSameWeek } from "date-fns";
+import HabitRow from "@/components/HabitRow";
+import { format, startOfWeek, addWeeks, addDays, isSameWeek, differenceInCalendarDays, isBefore, isEqual } from "date-fns";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -28,6 +28,22 @@ const chartConfig = {
 
 function getCurrentWeekStart() {
   return startOfWeek(new Date(), { weekStartsOn: 1 });
+}
+
+/** Calculate streak: consecutive completed days ending at the latest completed day */
+function calcStreak(checkRow: boolean[]): number {
+  // Find rightmost checked day, then count consecutive backwards
+  let lastChecked = -1;
+  for (let i = 6; i >= 0; i--) {
+    if (checkRow[i]) { lastChecked = i; break; }
+  }
+  if (lastChecked === -1) return 0;
+  let streak = 0;
+  for (let i = lastChecked; i >= 0; i--) {
+    if (checkRow[i]) streak++;
+    else break;
+  }
+  return streak;
 }
 
 const Index = () => {
@@ -52,6 +68,9 @@ const Index = () => {
   // Yearly data
   const [yearlyData, setYearlyData] = useState<{ weekLabel: string; percentage: number }[]>([]);
 
+  // Drag state
+  const dragIdx = useRef<number | null>(null);
+
   // Show welcome dialog on first visit
   useEffect(() => {
     if (!welcomeShown) {
@@ -75,8 +94,9 @@ const Index = () => {
     const load = async () => {
       const { data: habitsData } = await supabase
         .from("user_habits")
-        .select("habit_name")
-        .eq("user_code_id", userCodeId);
+        .select("habit_name, sort_order")
+        .eq("user_code_id", userCodeId)
+        .order("sort_order", { ascending: true });
       const habitNames = habitsData?.map((h) => h.habit_name) ?? [];
       setHabits(habitNames);
 
@@ -119,9 +139,13 @@ const Index = () => {
     load();
   }, [userCodeId, selectedWeekStart]);
 
-  const saveHabitToDB = useCallback(async (habitName: string) => {
+  const saveHabitToDB = useCallback(async (habitName: string, sortOrder: number) => {
     if (!userCodeId) return;
-    await supabase.from("user_habits").upsert({ user_code_id: userCodeId, habit_name: habitName });
+    await supabase.from("user_habits").upsert({
+      user_code_id: userCodeId,
+      habit_name: habitName,
+      sort_order: sortOrder,
+    });
   }, [userCodeId]);
 
   const removeHabitFromDB = useCallback(async (habitName: string) => {
@@ -148,10 +172,11 @@ const Index = () => {
       toast({ title: "Duplicate habit", description: "This habit already exists.", variant: "destructive" });
       return;
     }
+    const newOrder = habits.length;
     setHabits((prev) => [...prev, trimmed]);
     setCheckData((prev) => [...prev, Array(7).fill(false)]);
     setNewHabit("");
-    saveHabitToDB(trimmed);
+    saveHabitToDB(trimmed, newOrder);
   }, [newHabit, habits, saveHabitToDB]);
 
   const removeHabit = useCallback((index: number) => {
@@ -161,6 +186,26 @@ const Index = () => {
     removeHabitFromDB(habitName);
   }, [habits, removeHabitFromDB]);
 
+  const renameHabit = useCallback(async (index: number, newName: string) => {
+    if (habits.includes(newName)) {
+      toast({ title: "Duplicate", description: "A habit with that name already exists.", variant: "destructive" });
+      return;
+    }
+    const oldName = habits[index];
+    setHabits((prev) => prev.map((h, i) => (i === index ? newName : h)));
+    if (!userCodeId) return;
+    // Update habit name
+    await supabase.from("user_habits")
+      .update({ habit_name: newName })
+      .eq("user_code_id", userCodeId)
+      .eq("habit_name", oldName);
+    // Update all entries with old name
+    await supabase.from("habit_entries")
+      .update({ habit_name: newName })
+      .eq("user_code_id", userCodeId)
+      .eq("habit_name", oldName);
+  }, [habits, userCodeId]);
+
   const toggleCheck = useCallback((hIdx: number, dIdx: number) => {
     setCheckData((prev) => {
       const next = prev.map((row) => [...row]);
@@ -169,6 +214,39 @@ const Index = () => {
       return next;
     });
   }, [habits, saveEntryToDB]);
+
+  // Drag reorder
+  const handleDragStart = useCallback((idx: number) => { dragIdx.current = idx; }, []);
+  const handleDragOver = useCallback((e: React.DragEvent, _idx: number) => { e.preventDefault(); }, []);
+  const handleDrop = useCallback(async (dropIdx: number) => {
+    const from = dragIdx.current;
+    if (from === null || from === dropIdx) return;
+    const newHabits = [...habits];
+    const newCheck = [...checkData];
+    const [movedH] = newHabits.splice(from, 1);
+    const [movedC] = newCheck.splice(from, 1);
+    newHabits.splice(dropIdx, 0, movedH);
+    newCheck.splice(dropIdx, 0, movedC);
+    setHabits(newHabits);
+    setCheckData(newCheck);
+    dragIdx.current = null;
+
+    if (!userCodeId) return;
+    // Save new order
+    await Promise.all(
+      newHabits.map((name, i) =>
+        supabase.from("user_habits")
+          .update({ sort_order: i })
+          .eq("user_code_id", userCodeId)
+          .eq("habit_name", name)
+      )
+    );
+  }, [habits, checkData, userCodeId]);
+
+  const streaks = useMemo(() =>
+    checkData.map((row) => calcStreak(row)),
+    [checkData]
+  );
 
   const dailyPcts = useMemo(() => {
     if (habits.length === 0) return DAYS.map(() => 0);
@@ -297,25 +375,6 @@ const Index = () => {
                 <Plus className="mr-1 h-4 w-4" /> Add
               </Button>
             </div>
-            {habits.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {habits.map((h, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 rounded-full border bg-secondary px-3 py-1 text-sm text-secondary-foreground transition-transform hover:scale-105"
-                  >
-                    {h}
-                    <button
-                      onClick={() => removeHabit(i)}
-                      className="ml-1 rounded-full p-0.5 transition-colors hover:bg-destructive/20"
-                      aria-label={`Remove ${h}`}
-                    >
-                      <Trash2 className="h-3 w-3 text-destructive" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -329,26 +388,29 @@ const Index = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[120px]">Habit</TableHead>
+                    <TableHead className="min-w-[140px]">Habit</TableHead>
                     {DAYS.map((d) => (
                       <TableHead key={d} className="w-[60px] text-center sm:w-[80px]">{d}</TableHead>
                     ))}
+                    <TableHead className="w-[70px] text-center">Streak</TableHead>
+                    <TableHead className="w-[50px] text-center"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {habits.map((habit, hIdx) => (
-                    <TableRow key={hIdx}>
-                      <TableCell className="font-medium">{habit}</TableCell>
-                      {DAYS.map((_, dIdx) => (
-                        <TableCell key={dIdx} className="text-center">
-                          <Checkbox
-                            checked={checkData[hIdx]?.[dIdx] ?? false}
-                            onCheckedChange={() => toggleCheck(hIdx, dIdx)}
-                            className="transition-transform hover:scale-110"
-                          />
-                        </TableCell>
-                      ))}
-                    </TableRow>
+                    <HabitRow
+                      key={`${habit}-${hIdx}`}
+                      habit={habit}
+                      hIdx={hIdx}
+                      checkRow={checkData[hIdx] ?? []}
+                      streak={streaks[hIdx] ?? 0}
+                      onToggle={toggleCheck}
+                      onRemove={removeHabit}
+                      onRename={renameHabit}
+                      onDragStart={handleDragStart}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                    />
                   ))}
                 </TableBody>
               </Table>
