@@ -75,18 +75,21 @@ export type Database = {
           created_at: string
           habit_name: string
           id: string
+          sort_order: number
           user_code_id: string
         }
         Insert: {
           created_at?: string
           habit_name: string
           id?: string
+          sort_order?: number
           user_code_id: string
         }
         Update: {
           created_at?: string
           habit_name?: string
           id?: string
+          sort_order?: number
           user_code_id?: string
         }
         Relationships: [
