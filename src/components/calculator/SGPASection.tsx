@@ -1,0 +1,171 @@
+import { Course, calculateSGPA } from "@/types/calculator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calculator, TrendingUp, Award } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { GradeBadge } from "./GradeBadge";
+import confetti from "canvas-confetti";
+
+interface SGPASectionProps {
+  courses: Course[];
+  onShowCGPA: () => void;
+  cgpaData?: {
+    cgpa: number;
+    previousCGPA: number;
+    previousCredits: number;
+    newTotalCredits: number;
+  };
+}
+
+export function SGPASection({ courses, onShowCGPA, cgpaData }: SGPASectionProps) {
+  const [showResult, setShowResult] = useState(false);
+  const hasTriggeredConfetti = useRef(false);
+  
+  const validCourses = courses.filter(c => c.finalGradePoint !== null && c.name.trim() !== '');
+  const canCalculate = validCourses.length > 0;
+  const result = calculateSGPA(validCourses);
+
+  useEffect(() => {
+    if (showResult && result && !hasTriggeredConfetti.current) {
+      hasTriggeredConfetti.current = true;
+      const colors = ['#FF6B9D', '#FFE66D', '#4ECDC4', '#A855F7', '#FF8C42', '#10B981'];
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors });
+      setTimeout(() => {
+        confetti({ particleCount: 50, angle: 60, spread: 55, origin: { x: 0 }, colors });
+        confetti({ particleCount: 50, angle: 120, spread: 55, origin: { x: 1 }, colors });
+      }, 250);
+    }
+  }, [showResult, result]);
+
+  useEffect(() => {
+    if (!showResult) hasTriggeredConfetti.current = false;
+  }, [showResult]);
+
+  if (!canCalculate) {
+    return (
+      <Card className="border-dashed border-3 border-pop-cyan/40 animate-fade-in rounded-3xl bg-card/80 backdrop-blur-sm">
+        <CardContent className="py-10 text-center">
+          <div className="w-16 h-16 rounded-full bg-pop-cyan/20 flex items-center justify-center mx-auto mb-4">
+            <Calculator className="w-8 h-8 text-pop-cyan" />
+          </div>
+          <p className="text-muted-foreground text-sm sm:text-base font-medium">
+            Complete at least one course to calculate SGPA
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="animate-fade-in border-3 border-pop-green/40 rounded-3xl pop-shadow-lg overflow-hidden bg-card/80 backdrop-blur-sm">
+      <CardHeader className="pb-4 bg-pop-green/10">
+        <CardTitle className="flex items-center gap-3 text-base sm:text-lg">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-pop-green flex items-center justify-center flex-shrink-0 pop-shadow">
+            <Calculator className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          </div>
+          <span className="leading-tight font-bold">Step 3: SGPA Calculation</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 sm:space-y-6 pt-4">
+        {!showResult ? (
+          <div className="text-center py-6">
+            <p className="text-muted-foreground mb-5 text-sm sm:text-base">
+              You have <span className="font-bold text-foreground bg-pop-green/20 px-2 py-0.5 rounded-full">{validCourses.length}</span> course(s) ready for SGPA calculation.
+            </p>
+            <Button 
+              onClick={() => setShowResult(true)} 
+              size="lg"
+              className="bg-pop-green hover:bg-pop-green/90 text-white font-bold rounded-full px-8 pop-shadow transition-all duration-200 hover:scale-105 hover:-translate-y-0.5"
+            >
+              <Calculator className="w-5 h-5 mr-2" />
+              Calculate SGPA
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-5 sm:space-y-6 animate-bounce-in">
+            <div className="bg-card rounded-2xl border-2 border-foreground/10 overflow-x-auto pop-shadow">
+              <table className="w-full min-w-[320px]">
+                <thead>
+                  <tr className="border-b-2 border-foreground/10 bg-muted/50">
+                    <th className="text-left p-3 sm:p-4 text-xs sm:text-sm font-bold">Course</th>
+                    <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-bold">Credits</th>
+                    <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-bold">Grade</th>
+                    <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-bold whitespace-nowrap">Cr × GP</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {validCourses.map((course, i) => (
+                    <tr key={course.id} className="border-b border-foreground/5 last:border-b-0 hover:bg-muted/30 transition-colors">
+                      <td className="p-3 sm:p-4 text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none font-medium">
+                        {course.name || `Course ${i + 1}`}
+                      </td>
+                      <td className="p-3 sm:p-4 text-center text-xs sm:text-sm">
+                        <span className="bg-muted px-2 py-1 rounded-full font-bold">{course.credits}</span>
+                      </td>
+                      <td className="p-3 sm:p-4 text-center">
+                        <GradeBadge letter={course.letterGrade!} point={course.finalGradePoint!} size="sm" />
+                      </td>
+                      <td className="p-3 sm:p-4 text-center font-mono text-xs sm:text-sm">
+                        <span className="hidden sm:inline text-muted-foreground">{course.credits} × {course.finalGradePoint} = </span>
+                        <span className="font-bold bg-pop-green/20 px-2 py-1 rounded-full">{(course.credits * course.finalGradePoint!).toFixed(0)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <Card className="bg-muted/30 border-dashed border-2 border-pop-green/30 rounded-2xl">
+              <CardHeader className="pb-2 px-4 sm:px-6">
+                <CardTitle className="text-xs sm:text-sm flex items-center gap-2 text-pop-green font-bold">
+                  <Award className="w-4 h-4 sm:w-5 sm:h-5" />
+                  SGPA Formula
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 sm:space-y-3 text-xs sm:text-sm px-4 sm:px-6">
+                <div className="font-mono bg-card p-3 sm:p-4 rounded-xl border-2 border-foreground/10 space-y-1.5 overflow-x-auto">
+                  <div className="text-muted-foreground text-xs whitespace-nowrap">
+                    SGPA = Σ(Credits × Grade Point) ÷ Σ(Total Credits)
+                  </div>
+                  <div className="text-muted-foreground whitespace-nowrap">
+                    SGPA = {result?.totalGradePoints.toFixed(0)} ÷ {result?.totalCredits}
+                  </div>
+                  <div className="text-foreground font-bold text-lg sm:text-xl">
+                    SGPA = <span className="text-pop-green">{result?.sgpa.toFixed(2)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex flex-col items-center gap-4 sm:gap-5 p-6 sm:p-8 bg-gradient-to-br from-pop-green/10 to-pop-cyan/10 rounded-3xl border-3 border-pop-green/30 pop-shadow-lg">
+              <div className="text-center">
+                <div className="text-5xl sm:text-7xl font-black text-pop-green drop-shadow-md animate-bounce-in">{result?.sgpa.toFixed(2)}</div>
+                <div className="text-muted-foreground mt-2 text-sm font-medium">Your SGPA for this semester</div>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-muted-foreground">
+                <span className="bg-card px-3 py-1.5 rounded-full border-2 border-foreground/10">
+                  Total Credits: <strong className="text-foreground">{result?.totalCredits}</strong>
+                </span>
+                <span className="bg-card px-3 py-1.5 rounded-full border-2 border-foreground/10">
+                  Grade Points: <strong className="text-foreground">{result?.totalGradePoints.toFixed(0)}</strong>
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2 sm:pt-4">
+              <Button 
+                variant="outline" 
+                onClick={onShowCGPA} 
+                size="lg"
+                className="w-full sm:w-auto sm:flex-1 rounded-full border-2 border-pop-orange font-bold text-pop-orange hover:bg-pop-orange hover:text-white transition-all duration-200 hover:scale-[1.02]"
+              >
+                <TrendingUp className="w-5 h-5 mr-2" />
+                Calculate CGPA (Optional)
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

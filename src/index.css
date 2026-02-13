@@ -103,3 +103,33 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .pop-shadow {
+    box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.15);
+  }
+  .pop-shadow-lg {
+    box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.15);
+  }
+  .border-3 {
+    border-width: 3px;
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.4s ease-out forwards;
+}
