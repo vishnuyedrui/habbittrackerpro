@@ -1,75 +1,61 @@
 
 
-# Week Selector, Visual Redesign, Mobile Responsiveness & PWA
+# Add Grade Calculator with Navigation
 
-## 1. Week Selector
+## Overview
+Add a Grade Calculator as the default landing page, with a navigation bar that lets users switch between the Grade Calculator and the Habit Tracker.
 
-Add navigation arrows and a date display above the tracking table so users can move between weeks.
+## Changes
 
-- Add `selectedWeekStart` state (defaults to current week's Monday)
-- Left/right arrow buttons to go to previous/next week (using `addWeeks` from date-fns)
-- Display the week range (e.g., "Feb 10 - Feb 16, 2026")
-- Disable "next" button if already on the current week
-- When the selected week changes, load that week's entries from the database (for authenticated users)
-- `saveEntryToDB` uses the selected week instead of always the current week
-- For temporary users, only the current week is available (arrows hidden or disabled)
+### 1. Navigation Bar
+- Add a top-level navbar component with two tabs: **Grade Calculator** (default) and **Habit Tracker**
+- Use `react-router-dom` with `/` for Grade Calculator and `/habits` for Habit Tracker
+- Clean, minimal navbar that fits the existing design system
 
-## 2. Visual Design Overhaul
+### 2. New Files to Create
 
-### Custom Color Palette
-Update CSS variables in `src/index.css` with a modern, vibrant palette:
-- **Primary**: Indigo/violet tones (e.g., `243 75% 59%`)
-- **Accent**: Teal/emerald for success indicators
-- **Cards**: Subtle gradient backgrounds or soft shadows
-- **Chart bars**: Gradient fills instead of flat colors
+**`src/types/calculator.ts`**
+- Recreate all types and functions used by the uploaded components: `Course`, `Assessment`, `GRADE_MAPPINGS`, `SPECIAL_SESSIONAL_GRADES`, `calculateWGP`, `getGradeFromWGP`, `calculateFinalGradePointWithLab`, `calculateSGPA`, `calculateCGPA`, `checkForFGrade`, `requiresMarksInput`, `getSessionalTotalMarks`, `getSessionalGradePoint`
+- Reverse-engineered from the component usage patterns
 
-### Animations (via tailwind.config.ts)
-Add keyframes and utility classes:
-- `fade-in` for cards appearing on load
-- `scale-in` for stat cards
-- Smooth checkbox toggle transitions
-- Hover effects on habit chips and buttons (scale, shadow lift)
+**`src/components/calculator/CourseCard.tsx`** - Copied from uploaded file (remove PDF export references)
 
-### Polish
-- Add a gradient or colored header bar
-- Rounded stat cards with colored borders based on completion percentage (red/yellow/green)
-- Better typography hierarchy
-- Subtle card hover shadows
-- Progress ring or colored badge for the weekly average
+**`src/components/calculator/GradeBadge.tsx`** - Copied from uploaded file
 
-## 3. Mobile Responsiveness
+**`src/components/calculator/GradeChart.tsx`** - Copied from uploaded file
 
-- **Header**: Stack title and auth buttons vertically on small screens
-- **Tracking Table**: Wrap in a horizontal scroll container on mobile, or switch to a card-based layout per habit
-- **Daily Completion Grid**: Change from `grid-cols-7` to `grid-cols-4` on small screens, then `grid-cols-7` on larger
-- **Chart**: Already responsive via Recharts `ResponsiveContainer`
-- **Action Buttons**: Full-width stacking on mobile
-- **Week Selector**: Compact layout with smaller buttons on mobile
+**`src/components/calculator/SGPASection.tsx`** - Copied from uploaded file (remove PDF export)
 
-## 4. PWA (Installable Web App)
+**`src/components/calculator/CGPASection.tsx`** - Copied from uploaded file (remove PDF export)
 
-- Install `vite-plugin-pwa`
-- Configure in `vite.config.ts` with app manifest (name, icons, theme color, display: standalone)
-- Add `navigateFallbackDenylist: [/^\/~oauth/]` to workbox config
-- Add PWA meta tags to `index.html` (theme-color, apple-touch-icon)
-- Create basic PWA icons in `public/` folder (192x192 and 512x512)
-- The app will then be installable from mobile browsers via "Add to Home Screen"
+**`src/components/calculator/StepIndicator.tsx`** - Copied from uploaded file
 
-## Technical Details
+**`src/components/calculator/WGPFormula.tsx`** - Copied from uploaded file
 
-### Files to Create
-- `src/components/WeekSelector.tsx` -- navigation arrows + week label
+**`src/components/Navbar.tsx`** - Navigation bar with Grade Calculator / Habit Tracker links
 
-### Files to Modify
-- `src/index.css` -- new color palette with vibrant, modern HSL values
-- `tailwind.config.ts` -- add animation keyframes (fade-in, scale-in, slide-in)
-- `src/pages/Index.tsx` -- integrate WeekSelector, apply responsive classes, animate cards, use selectedWeekStart for data loading
-- `src/components/YearlyChart.tsx` -- apply new chart colors
-- `index.html` -- update title, add PWA meta tags
-- `vite.config.ts` -- add vite-plugin-pwa configuration
-- `src/components/AuthDialog.tsx` -- minor styling polish
-- `src/components/WelcomeDialog.tsx` -- minor styling polish
+**`src/pages/GradeCalculator.tsx`** - Main page that orchestrates courses, step indicator, SGPA/CGPA sections
 
-### New Dependencies
-- `vite-plugin-pwa` -- for PWA support
+### 3. Files to Modify
 
+**`src/App.tsx`** - Add Navbar, routes for `/` (GradeCalculator) and `/habits` (existing Index)
+
+**`tailwind.config.ts`** - Add pop-art colors used by grade calculator components (`pop-pink`, `pop-cyan`, `pop-green`, `pop-orange`, `pop-yellow`, `pop-purple`, grade colors)
+
+**`src/index.css`** - Add `pop-shadow`, `pop-shadow-lg`, `border-3`, and `animate-bounce-in` utility classes
+
+### 4. New Dependency
+- `canvas-confetti` - for celebration animations on SGPA/CGPA calculation
+
+### 5. Routing Structure
+
+```text
+/         -> Grade Calculator (landing page)
+/habits   -> Habit Tracker (existing page, moved from /)
+```
+
+## Technical Notes
+- The `types/calculator.ts` file will be reconstructed based on function signatures and usage in the uploaded components (WGP calculation with sessional weights 0.30/0.45/0.25, ceiling to nearest integer, grade mapping from WGP to letter grades on a 10-point scale, CGPA weighted average formula)
+- PDF export functionality is excluded per user preference
+- The `canvas-confetti` package provides lightweight confetti animations triggered when results are calculated
+- All grade calculator components use a "pop art" design style with bold colors, rounded corners, and playful shadows -- these custom utilities will be added to the CSS/Tailwind config
