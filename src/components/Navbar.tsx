@@ -1,11 +1,11 @@
 import { NavLink } from "@/components/NavLink";
 import { Calculator, CheckSquare } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-center gap-2">
+      <div className="container flex h-14 items-center justify-center gap-3">
+        <img src="/logo.png" alt="TeamDino logo" className="w-8 h-8 rounded-full" />
         <NavLink
           to="/"
           end

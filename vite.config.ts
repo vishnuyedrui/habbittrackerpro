@@ -23,26 +23,26 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/],
       },
       manifest: {
-        name: "Weekly Habit Tracker",
-        short_name: "HabitTracker",
-        description: "Track your habits, visualize progress, and build consistency.",
+        name: "TeamDino - Work Smart",
+        short_name: "TeamDino",
+        description: "Grade calculator and habit tracker to help you work smart.",
         theme_color: "#6366f1",
         background_color: "#fafafc",
         display: "standalone",
         orientation: "portrait",
         icons: [
           {
-            src: "/pwa-192x192.png",
+            src: "/logo.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: "/pwa-512x512.png",
+            src: "/logo.png",
             sizes: "512x512",
             type: "image/png",
           },
           {
-            src: "/pwa-512x512.png",
+            src: "/logo.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",
