@@ -44,9 +44,9 @@ export function SGPASection({ courses, onShowCGPA, cgpaData }: SGPASectionProps)
   if (!canCalculate) {
     return (
       <Card className="border-dashed border-3 border-pop-cyan/40 animate-fade-in rounded-3xl bg-card/80 backdrop-blur-sm">
-        <CardContent className="py-10 text-center">
-          <div className="w-16 h-16 rounded-full bg-pop-cyan/20 flex items-center justify-center mx-auto mb-4">
-            <Calculator className="w-8 h-8 text-pop-cyan" />
+        <CardContent className="py-8 sm:py-10 text-center">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-pop-cyan/20 flex items-center justify-center mx-auto mb-4 rotate-6">
+            <Calculator className="w-7 h-7 sm:w-8 sm:h-8 text-pop-cyan" />
           </div>
           <p className="text-muted-foreground text-sm sm:text-base font-medium">
             Complete at least one course to calculate SGPA
@@ -58,56 +58,56 @@ export function SGPASection({ courses, onShowCGPA, cgpaData }: SGPASectionProps)
 
   return (
     <Card className="animate-fade-in border-3 border-pop-green/40 rounded-3xl pop-shadow-lg overflow-hidden bg-card/80 backdrop-blur-sm">
-      <CardHeader className="pb-4 bg-pop-green/10">
-        <CardTitle className="flex items-center gap-3 text-base sm:text-lg">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-pop-green flex items-center justify-center flex-shrink-0 pop-shadow">
+      <CardHeader className="pb-3 sm:pb-4 bg-pop-green/10">
+        <CardTitle className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-pop-green flex items-center justify-center flex-shrink-0 pop-shadow -rotate-3">
             <Calculator className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <span className="leading-tight font-bold">Step 3: SGPA Calculation</span>
+          <span className="leading-tight font-bold font-display">Step 3: SGPA Calculation</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 sm:space-y-6 pt-4">
+      <CardContent className="space-y-4 sm:space-y-6 pt-4 px-4 sm:px-6">
         {!showResult ? (
-          <div className="text-center py-6">
+          <div className="text-center py-5 sm:py-6">
             <p className="text-muted-foreground mb-5 text-sm sm:text-base">
               You have <span className="font-bold text-foreground bg-pop-green/20 px-2 py-0.5 rounded-full">{validCourses.length}</span> course(s) ready for SGPA calculation.
             </p>
             <Button 
               onClick={() => setShowResult(true)} 
               size="lg"
-              className="bg-pop-green hover:bg-pop-green/90 text-white font-bold rounded-full px-8 pop-shadow transition-all duration-200 hover:scale-105 hover:-translate-y-0.5"
+              className="bg-pop-green hover:bg-pop-green/90 text-white font-bold font-display rounded-full px-6 sm:px-8 pop-shadow transition-all duration-200 hover:scale-105 hover:-translate-y-0.5 hover:pop-shadow-lg active:scale-95"
             >
               <Calculator className="w-5 h-5 mr-2" />
               Calculate SGPA
             </Button>
           </div>
         ) : (
-          <div className="space-y-5 sm:space-y-6 animate-bounce-in">
+          <div className="space-y-4 sm:space-y-6 animate-bounce-in">
             <div className="bg-card rounded-2xl border-2 border-foreground/10 overflow-x-auto pop-shadow">
-              <table className="w-full min-w-[320px]">
+              <table className="w-full min-w-[300px]">
                 <thead>
                   <tr className="border-b-2 border-foreground/10 bg-muted/50">
-                    <th className="text-left p-3 sm:p-4 text-xs sm:text-sm font-bold">Course</th>
-                    <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-bold">Credits</th>
-                    <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-bold">Grade</th>
-                    <th className="text-center p-3 sm:p-4 text-xs sm:text-sm font-bold whitespace-nowrap">Cr × GP</th>
+                    <th className="text-left p-2.5 sm:p-4 text-xs sm:text-sm font-bold font-display">Course</th>
+                    <th className="text-center p-2.5 sm:p-4 text-xs sm:text-sm font-bold font-display">Cr</th>
+                    <th className="text-center p-2.5 sm:p-4 text-xs sm:text-sm font-bold font-display">Grade</th>
+                    <th className="text-center p-2.5 sm:p-4 text-xs sm:text-sm font-bold font-display whitespace-nowrap">Cr × GP</th>
                   </tr>
                 </thead>
                 <tbody>
                   {validCourses.map((course, i) => (
                     <tr key={course.id} className="border-b border-foreground/5 last:border-b-0 hover:bg-muted/30 transition-colors">
-                      <td className="p-3 sm:p-4 text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none font-medium">
+                      <td className="p-2.5 sm:p-4 text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none font-medium">
                         {course.name || `Course ${i + 1}`}
                       </td>
-                      <td className="p-3 sm:p-4 text-center text-xs sm:text-sm">
-                        <span className="bg-muted px-2 py-1 rounded-full font-bold">{course.credits}</span>
+                      <td className="p-2.5 sm:p-4 text-center text-xs sm:text-sm">
+                        <span className="bg-muted px-2 py-0.5 rounded-full font-bold">{course.credits}</span>
                       </td>
-                      <td className="p-3 sm:p-4 text-center">
+                      <td className="p-2.5 sm:p-4 text-center">
                         <GradeBadge letter={course.letterGrade!} point={course.finalGradePoint!} size="sm" />
                       </td>
-                      <td className="p-3 sm:p-4 text-center font-mono text-xs sm:text-sm">
+                      <td className="p-2.5 sm:p-4 text-center font-mono text-xs sm:text-sm">
                         <span className="hidden sm:inline text-muted-foreground">{course.credits} × {course.finalGradePoint} = </span>
-                        <span className="font-bold bg-pop-green/20 px-2 py-1 rounded-full">{(course.credits * course.finalGradePoint!).toFixed(0)}</span>
+                        <span className="font-bold bg-pop-green/20 px-2 py-0.5 rounded-full">{(course.credits * course.finalGradePoint!).toFixed(0)}</span>
                       </td>
                     </tr>
                   ))}
@@ -117,32 +117,32 @@ export function SGPASection({ courses, onShowCGPA, cgpaData }: SGPASectionProps)
 
             <Card className="bg-muted/30 border-dashed border-2 border-pop-green/30 rounded-2xl">
               <CardHeader className="pb-2 px-4 sm:px-6">
-                <CardTitle className="text-xs sm:text-sm flex items-center gap-2 text-pop-green font-bold">
+                <CardTitle className="text-xs sm:text-sm flex items-center gap-2 text-pop-green font-bold font-display">
                   <Award className="w-4 h-4 sm:w-5 sm:h-5" />
                   SGPA Formula
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 sm:space-y-3 text-xs sm:text-sm px-4 sm:px-6">
                 <div className="font-mono bg-card p-3 sm:p-4 rounded-xl border-2 border-foreground/10 space-y-1.5 overflow-x-auto">
-                  <div className="text-muted-foreground text-xs whitespace-nowrap">
+                  <div className="text-muted-foreground text-[10px] sm:text-xs whitespace-nowrap">
                     SGPA = Σ(Credits × Grade Point) ÷ Σ(Total Credits)
                   </div>
-                  <div className="text-muted-foreground whitespace-nowrap">
+                  <div className="text-muted-foreground whitespace-nowrap text-xs">
                     SGPA = {result?.totalGradePoints.toFixed(0)} ÷ {result?.totalCredits}
                   </div>
                   <div className="text-foreground font-bold text-lg sm:text-xl">
-                    SGPA = <span className="text-pop-green">{result?.sgpa.toFixed(2)}</span>
+                    SGPA = <span className="text-pop-green bg-pop-green/10 px-2 py-0.5 rounded-lg">{result?.sgpa.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <div className="flex flex-col items-center gap-4 sm:gap-5 p-6 sm:p-8 bg-gradient-to-br from-pop-green/10 to-pop-cyan/10 rounded-3xl border-3 border-pop-green/30 pop-shadow-lg">
+            <div className="flex flex-col items-center gap-3 sm:gap-5 p-5 sm:p-8 bg-gradient-to-br from-pop-green/10 to-pop-cyan/10 rounded-3xl border-3 border-pop-green/30 pop-shadow-lg">
               <div className="text-center">
-                <div className="text-5xl sm:text-7xl font-black text-pop-green drop-shadow-md animate-bounce-in">{result?.sgpa.toFixed(2)}</div>
-                <div className="text-muted-foreground mt-2 text-sm font-medium">Your SGPA for this semester</div>
+                <div className="text-5xl sm:text-7xl font-black font-display text-pop-green drop-shadow-md animate-pop-in">{result?.sgpa.toFixed(2)}</div>
+                <div className="text-muted-foreground mt-2 text-xs sm:text-sm font-medium">Your SGPA for this semester 🎉</div>
               </div>
-              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-6 text-xs sm:text-sm text-muted-foreground">
                 <span className="bg-card px-3 py-1.5 rounded-full border-2 border-foreground/10">
                   Total Credits: <strong className="text-foreground">{result?.totalCredits}</strong>
                 </span>
@@ -157,7 +157,7 @@ export function SGPASection({ courses, onShowCGPA, cgpaData }: SGPASectionProps)
                 variant="outline" 
                 onClick={onShowCGPA} 
                 size="lg"
-                className="w-full sm:w-auto sm:flex-1 rounded-full border-2 border-pop-orange font-bold text-pop-orange hover:bg-pop-orange hover:text-white transition-all duration-200 hover:scale-[1.02]"
+                className="w-full sm:w-auto sm:flex-1 rounded-full border-3 border-pop-orange font-bold font-display text-pop-orange hover:bg-pop-orange hover:text-white transition-all duration-300 hover:scale-[1.02] hover:pop-shadow active:scale-95"
               >
                 <TrendingUp className="w-5 h-5 mr-2" />
                 Calculate CGPA (Optional)
