@@ -30,16 +30,16 @@ export function GradeBadge({ letter, point, size = "md" }: GradeBadgeProps) {
   const isTopGrade = ['O', 'A+', 'A'].includes(letter);
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block group">
       {isTopGrade && size !== "sm" && (
         <div className="absolute inset-0 animate-pulse">
-          <div className="absolute inset-0 bg-gradient-to-r from-pop-yellow/30 to-pop-orange/30 rounded-full blur-md scale-125" />
+          <div className="absolute inset-0 bg-gradient-to-r from-pop-yellow/30 to-pop-orange/30 rounded-2xl blur-md scale-125" />
         </div>
       )}
       
       <div
         className={cn(
-          "relative rounded-full flex flex-col items-center justify-center text-white font-extrabold border-3 border-white pop-shadow transition-all duration-200 hover:scale-110",
+          "relative rounded-2xl flex flex-col items-center justify-center text-white font-extrabold font-display border-3 border-white pop-shadow transition-all duration-300 hover:scale-110 hover:rotate-3 hover:pop-shadow-lg cursor-default",
           gradeColors[letter] || 'bg-muted',
           sizeClasses[size]
         )}

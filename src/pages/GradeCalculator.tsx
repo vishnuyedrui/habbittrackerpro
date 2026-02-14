@@ -6,7 +6,7 @@ import { SGPASection } from "@/components/calculator/SGPASection";
 import { CGPASection } from "@/components/calculator/CGPASection";
 import { GradeChart } from "@/components/calculator/GradeChart";
 import { Button } from "@/components/ui/button";
-import { Plus, GraduationCap } from "lucide-react";
+import { Plus, GraduationCap, Sparkles } from "lucide-react";
 
 export default function GradeCalculator() {
   const [courses, setCourses] = useState<Course[]>([createNewCourse()]);
@@ -65,16 +65,17 @@ export default function GradeCalculator() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl py-6 sm:py-10 space-y-6 sm:space-y-8">
+    <div className="min-h-screen bg-background abstract-dots">
+      <div className="container max-w-4xl py-5 sm:py-10 px-4 sm:px-6 space-y-5 sm:space-y-8">
         {/* Header */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-pop-pink/20 to-pop-purple/20 px-6 py-3 rounded-full border-2 border-pop-pink/30 pop-shadow">
-            <GraduationCap className="w-6 h-6 text-pop-pink" />
-            <h1 className="text-2xl sm:text-3xl font-black">Grade Calculator</h1>
+        <div className="text-center space-y-3 animate-pop-in">
+          <div className="inline-flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-pop-pink/20 via-pop-purple/15 to-pop-cyan/20 px-5 sm:px-6 py-3 rounded-full border-3 border-pop-pink/30 pop-shadow-lg">
+            <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-pop-pink animate-float" />
+            <h1 className="text-xl sm:text-3xl font-black font-display">Grade Calculator</h1>
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-pop-yellow" />
           </div>
-          <p className="text-muted-foreground text-sm sm:text-base font-medium max-w-lg mx-auto">
-            Calculate your WGP, SGPA, and CGPA with step-by-step breakdowns
+          <p className="text-muted-foreground text-xs sm:text-base font-medium max-w-lg mx-auto">
+            Calculate your WGP, SGPA, and CGPA with step-by-step breakdowns ✨
           </p>
         </div>
 
@@ -85,7 +86,7 @@ export default function GradeCalculator() {
         <GradeChart />
 
         {/* Course Cards */}
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
           {courses.map((course, index) => (
             <CourseCard
               key={course.id}
@@ -104,7 +105,7 @@ export default function GradeCalculator() {
             onClick={addCourse}
             variant="outline"
             size="lg"
-            className="rounded-full border-2 border-dashed border-pop-cyan font-bold text-pop-cyan hover:bg-pop-cyan hover:text-white transition-all duration-200 hover:scale-105 hover:border-solid"
+            className="rounded-full border-3 border-dashed border-pop-cyan font-bold font-display text-pop-cyan hover:bg-pop-cyan hover:text-white transition-all duration-300 hover:scale-105 hover:border-solid hover:pop-shadow hover:rotate-1 active:scale-95"
           >
             <Plus className="w-5 h-5 mr-2" />
             Add Another Course
@@ -127,6 +128,13 @@ export default function GradeCalculator() {
             onCGPACalculated={handleCGPACalculated}
           />
         )}
+
+        {/* Footer */}
+        <div className="text-center py-4 sm:py-6">
+          <p className="text-xs text-muted-foreground font-medium">
+            Made with 💜 by TeamDino
+          </p>
+        </div>
       </div>
     </div>
   );

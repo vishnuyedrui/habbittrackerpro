@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, BookOpen, Lock } from "lucide-react";
+import { Trash2, BookOpen, Lock, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GradeBadge } from "./GradeBadge";
 import { WGPFormula } from "./WGPFormula";
@@ -269,28 +269,35 @@ export function CourseCard({
     "bg-pop-orange",
   ];
 
+  const accentBorders = [
+    "border-pop-pink/30",
+    "border-pop-cyan/30",
+    "border-pop-green/30",
+    "border-pop-orange/30",
+  ];
+
   return (
     <Card
       className={cn(
-        "animate-fade-in border-3 transition-all duration-300 hover:pop-shadow-lg rounded-3xl overflow-hidden bg-card/80 backdrop-blur-sm",
+        "animate-fade-in border-3 transition-all duration-300 rounded-3xl overflow-hidden bg-card/80 backdrop-blur-sm hover-lift",
         popColors[index % popColors.length],
         (course.wgp !== null || course.finalGradePoint !== null) && "pop-shadow"
       )}
     >
-      <CardHeader className={cn("pb-4", headerColors[index % headerColors.length])}>
+      <CardHeader className={cn("pb-3 sm:pb-4", headerColors[index % headerColors.length])}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={cn("w-11 h-11 rounded-full flex items-center justify-center pop-shadow", iconColors[index % iconColors.length])}>
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className={cn("w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center pop-shadow rotate-3 hover:rotate-0 transition-transform", iconColors[index % iconColors.length])}>
               <BookOpen className="w-5 h-5 text-white" />
             </div>
-            <h3 className="text-lg font-bold">Course {index + 1}</h3>
+            <h3 className="text-base sm:text-lg font-bold font-display">Course {index + 1}</h3>
           </div>
           {canRemove && (
             <Button
               variant="ghost"
               size="icon"
               onClick={onRemove}
-              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all duration-200 hover:scale-110"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-2xl transition-all duration-200 hover:scale-110 hover:rotate-12"
               aria-label={`Remove course ${index + 1}`}
             >
               <Trash2 className="w-4 h-4" aria-hidden="true" />
@@ -299,15 +306,16 @@ export function CourseCard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6 pt-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <CardContent className="space-y-5 sm:space-y-6 pt-4 px-4 sm:px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-2">
-            <Label htmlFor={`courseName-${course.id}`} className="font-bold">Course Name</Label>
+            <Label htmlFor={`courseName-${course.id}`} className="font-bold text-sm font-display">Course Name</Label>
             <Input
               id={`courseName-${course.id}`}
               value={course.name}
               onChange={(e) => onUpdate({ ...course, name: e.target.value })}
-              className="bg-card rounded-xl border-2 border-foreground/10 h-11 font-medium"
+              placeholder="e.g. Mathematics"
+              className="bg-card rounded-2xl border-2 border-foreground/10 h-11 font-medium focus:border-primary transition-all"
             />
             {isCLAD && (
               <p className="text-xs text-muted-foreground bg-pop-yellow/20 px-3 py-1.5 rounded-full inline-block font-medium">
@@ -315,22 +323,22 @@ export function CourseCard({
               </p>
             )}
             {!isCLAD && (
-              <div className="flex items-center gap-2 mt-2">
+              <label className="flex items-center gap-2 mt-2 cursor-pointer group">
                 <input
                   id={`hasLab-${course.id}`}
                   type="checkbox"
                   checked={course.hasLab || false}
                   onChange={(e) => handleLabToggle(e.target.checked)}
-                  className="w-4 h-4 rounded border-2 border-foreground/20"
+                  className="w-4 h-4 rounded border-2 border-foreground/20 accent-pop-cyan"
                 />
-                <Label htmlFor={`hasLab-${course.id}`} className="text-xs text-muted-foreground cursor-pointer font-medium">
+                <span className="text-xs text-muted-foreground font-medium group-hover:text-foreground transition-colors">
                   🔬 This course has Lab
-                </Label>
-              </div>
+                </span>
+              </label>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`credits-${course.id}`} className="font-bold">Credits</Label>
+            <Label htmlFor={`credits-${course.id}`} className="font-bold text-sm font-display">Credits</Label>
             <Input
               id={`credits-${course.id}`}
               type="number"
@@ -339,18 +347,18 @@ export function CourseCard({
               value={isCLAD ? 1 : course.credits}
               disabled={isCLAD}
               onChange={(e) => onUpdate({ ...course, credits: parseInt(e.target.value) })}
-              className="bg-card rounded-xl border-2 border-foreground/10 h-11 font-medium"
+              className="bg-card rounded-2xl border-2 border-foreground/10 h-11 font-medium"
             />
           </div>
         </div>
 
         {isCLAD && (
           <div className="space-y-2">
-            <Label htmlFor={`cladGrade-${course.id}`}>Final Grade</Label>
+            <Label htmlFor={`cladGrade-${course.id}`} className="font-display font-bold">Final Grade</Label>
             <select
               id={`cladGrade-${course.id}`}
               aria-label="Select CLAD grade"
-              className="w-full rounded-md border bg-card px-2 py-2 text-center"
+              className="w-full rounded-2xl border-2 border-foreground/10 bg-card px-3 py-2.5 text-center font-bold transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
               value={course.letterGrade ?? ""}
               onChange={(e) => {
                 const selected = CLAD_GRADE_OPTIONS.find(g => g.label === e.target.value);
@@ -377,14 +385,16 @@ export function CourseCard({
 
         {!isCLAD && (
           <div className="space-y-3">
-            <h4 className="font-bold text-sm text-foreground/80">📝 Assessment Grades</h4>
-            <div className="bg-card rounded-2xl border-2 border-foreground/10 overflow-hidden pop-shadow">
+            <h4 className="font-bold text-sm text-foreground/80 font-display">📝 Assessment Grades</h4>
+            
+            {/* Desktop: Table layout */}
+            <div className="hidden sm:block bg-card rounded-2xl border-2 border-foreground/10 overflow-hidden pop-shadow">
               <table className="w-full">
                 <thead>
                   <tr className="border-b-2 border-foreground/10 bg-muted/50">
-                    <th className="text-left p-3 sm:p-4 text-sm font-bold">Assessment</th>
-                    <th className="text-center p-3 sm:p-4 text-sm font-bold w-24">Weight</th>
-                    <th className="text-center p-3 sm:p-4 text-sm font-bold w-40">Grade</th>
+                    <th className="text-left p-4 text-sm font-bold font-display">Assessment</th>
+                    <th className="text-center p-4 text-sm font-bold font-display w-24">Weight</th>
+                    <th className="text-center p-4 text-sm font-bold font-display w-40">Grade</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -396,14 +406,14 @@ export function CourseCard({
                     
                     return (
                       <tr key={assessment.name} className="border-b border-foreground/5 last:border-b-0 hover:bg-muted/30 transition-colors">
-                        <td className="p-3 sm:p-4 text-sm font-medium">{assessment.name}</td>
-                        <td className="p-3 sm:p-4 text-center">
+                        <td className="p-4 text-sm font-medium">{assessment.name}</td>
+                        <td className="p-4 text-center">
                           <div className="inline-flex items-center gap-1.5 text-sm text-muted-foreground bg-muted px-3 py-1.5 rounded-full font-bold border border-foreground/10">
                             <Lock className="w-3 h-3" />
                             {(assessment.weight * 100).toFixed(0)}%
                           </div>
                         </td>
-                        <td className="p-3 sm:p-4">
+                        <td className="p-4">
                           <div className="space-y-2">
                             <select
                               id={`grade-${course.id}-${i}`}
@@ -425,7 +435,7 @@ export function CourseCard({
                                   type="number"
                                   min={0}
                                   max={100}
-                                  placeholder="Enter marks (0-100) *"
+                                  placeholder="Marks (0-100) *"
                                   value={assessment.marks ?? ""}
                                   onChange={(e) => updateAssessmentMarks(i, e.target.value)}
                                   className={cn(
@@ -448,6 +458,70 @@ export function CourseCard({
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile: Stacked card layout */}
+            <div className="sm:hidden space-y-3">
+              {course.assessments.map((assessment, i) => {
+                const gradeOptions = getGradeOptions(assessment.name);
+                const isSessional = assessment.name === 'Sessional 1' || assessment.name === 'Sessional 2';
+                const hasSpecialGrade = SPECIAL_SESSIONAL_GRADES.includes(assessment.gradeLabel || '');
+                const showMarksInput = isSessional && showMarksInputs;
+                
+                return (
+                  <div 
+                    key={assessment.name} 
+                    className={cn(
+                      "bg-card rounded-2xl border-2 p-4 space-y-3 transition-all duration-200",
+                      accentBorders[index % accentBorders.length],
+                      "hover:pop-shadow"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold font-display">{assessment.name}</span>
+                      <div className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full font-bold border border-foreground/10">
+                        <Lock className="w-3 h-3" />
+                        {(assessment.weight * 100).toFixed(0)}%
+                      </div>
+                    </div>
+                    <select
+                      id={`grade-mobile-${course.id}-${i}`}
+                      aria-label={`Select grade for ${assessment.name}`}
+                      className="w-full rounded-xl border-2 border-foreground/10 bg-background px-3 py-2.5 text-center font-bold text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      value={assessment.gradeLabel ?? ""}
+                      onChange={(e) => updateAssessmentGrade(i, e.target.value)}
+                    >
+                      <option value="">Select Grade</option>
+                      {gradeOptions.map((g) => (
+                        <option key={g.label} value={g.label}>{g.label}</option>
+                      ))}
+                    </select>
+                    {showMarksInput && (
+                      <div className="space-y-1.5">
+                        <Input
+                          id={`marks-mobile-${course.id}-${i}`}
+                          aria-label={`Enter marks for ${assessment.name}`}
+                          type="number"
+                          min={0}
+                          max={100}
+                          placeholder="Enter marks (0-100) *"
+                          value={assessment.marks ?? ""}
+                          onChange={(e) => updateAssessmentMarks(i, e.target.value)}
+                          className={cn(
+                            "w-full text-center bg-background text-sm rounded-xl border-2 font-medium",
+                            assessment.marks === null ? "border-pop-orange" : "border-foreground/10"
+                          )}
+                        />
+                        {hasSpecialGrade && (
+                          <p className="text-xs text-muted-foreground text-center bg-muted/50 px-2 py-1 rounded-full">
+                            {assessment.gradeLabel}: GP based on total
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
             
             {showMarksInputs && (
               <div className={cn(
@@ -456,8 +530,8 @@ export function CourseCard({
                 totalMarks >= 25 ? "bg-pop-green/10 border-pop-green/30 text-pop-green" :
                 "bg-destructive/10 border-destructive/30 text-destructive"
               )}>
-                <div className="font-bold mb-2">📊 Sessional Marks Summary:</div>
-                <div className="flex flex-wrap gap-4 text-xs font-medium">
+                <div className="font-bold mb-2 font-display">📊 Sessional Marks Summary:</div>
+                <div className="flex flex-wrap gap-2 sm:gap-4 text-xs font-medium">
                   <span className="bg-card px-3 py-1 rounded-full border border-foreground/10">S1: {s1Marks !== null ? s1Marks : '—'}</span>
                   <span className="bg-card px-3 py-1 rounded-full border border-foreground/10">S2: {s2Marks !== null ? s2Marks : '—'}</span>
                   <span className="font-bold bg-card px-3 py-1 rounded-full border border-foreground/10">Total: {bothEntered ? totalMarks : '—'}</span>
@@ -480,7 +554,7 @@ export function CourseCard({
 
         {!isCLAD && course.hasLab && (
           <div className="space-y-2">
-            <Label htmlFor={`labMarks-${course.id}`} className="font-bold">🔬 Lab Marks (out of 100)</Label>
+            <Label htmlFor={`labMarks-${course.id}`} className="font-bold font-display">🔬 Lab Marks (out of 100)</Label>
             <Input
               id={`labMarks-${course.id}`}
               type="number"
@@ -498,7 +572,7 @@ export function CourseCard({
                   onUpdate({ ...course, labMarks });
                 }
               }}
-              className="bg-card rounded-xl border-2 border-foreground/10 h-11 font-medium"
+              className="bg-card rounded-2xl border-2 border-foreground/10 h-11 font-medium"
             />
           </div>
         )}
@@ -518,7 +592,8 @@ export function CourseCard({
               <div className="flex items-center justify-center gap-4 p-5 bg-gradient-to-br from-pop-purple/10 to-pop-pink/10 rounded-2xl border-2 border-pop-purple/30 pop-shadow">
                 <GradeBadge letter={course.letterGrade} point={course.finalGradePoint} />
                 <div className="text-sm text-muted-foreground font-medium">
-                  Final Grade Point: <span className="font-bold text-foreground text-lg">{course.finalGradePoint}</span>
+                  <span className="font-display font-bold text-foreground text-lg block">{course.finalGradePoint}</span>
+                  Final Grade Point
                 </div>
               </div>
             )}

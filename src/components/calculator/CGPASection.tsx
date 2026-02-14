@@ -58,22 +58,22 @@ export function CGPASection({ currentSGPA, currentCredits, courses, onCGPACalcul
 
   return (
     <Card className="animate-fade-in border-3 border-pop-orange/40 rounded-3xl pop-shadow-lg overflow-hidden bg-card/80 backdrop-blur-sm">
-      <CardHeader className="pb-4 bg-pop-orange/10">
-        <CardTitle className="flex items-center gap-3 text-base sm:text-lg">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-pop-orange flex items-center justify-center flex-shrink-0 pop-shadow">
+      <CardHeader className="pb-3 sm:pb-4 bg-pop-orange/10">
+        <CardTitle className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-pop-orange flex items-center justify-center flex-shrink-0 pop-shadow rotate-3">
             <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <span className="leading-tight font-bold">Step 4: New CGPA (Optional)</span>
+          <span className="leading-tight font-bold font-display">Step 4: New CGPA (Optional)</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 sm:space-y-6 pt-4">
+      <CardContent className="space-y-4 sm:space-y-6 pt-4 px-4 sm:px-6">
         <p className="text-muted-foreground text-xs sm:text-sm font-medium">
           Enter your previous academic record to calculate your updated cumulative GPA.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
           <div className="space-y-2">
-            <Label htmlFor="prev-cgpa" className="text-sm font-bold">Previous CGPA</Label>
+            <Label htmlFor="prev-cgpa" className="text-sm font-bold font-display">Previous CGPA</Label>
             <Input
               id="prev-cgpa"
               aria-label="Enter your previous CGPA"
@@ -84,11 +84,11 @@ export function CGPASection({ currentSGPA, currentCredits, courses, onCGPACalcul
               placeholder="e.g., 8.5"
               value={previousCGPA}
               onChange={(e) => { setPreviousCGPA(e.target.value); setShowResult(false); }}
-              className="bg-card rounded-xl border-2 border-foreground/10 focus:border-pop-orange h-12"
+              className="bg-card rounded-2xl border-2 border-foreground/10 focus:border-pop-orange h-12"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="prev-credits" className="text-sm font-bold">Previous Total Credits</Label>
+            <Label htmlFor="prev-credits" className="text-sm font-bold font-display">Previous Total Credits</Label>
             <Input
               id="prev-credits"
               aria-label="Enter your previous total credits"
@@ -97,14 +97,14 @@ export function CGPASection({ currentSGPA, currentCredits, courses, onCGPACalcul
               placeholder="e.g., 120"
               value={previousCredits}
               onChange={(e) => { setPreviousCredits(e.target.value); setShowResult(false); }}
-              className="bg-card rounded-xl border-2 border-foreground/10 focus:border-pop-orange h-12"
+              className="bg-card rounded-2xl border-2 border-foreground/10 focus:border-pop-orange h-12"
             />
           </div>
         </div>
 
         <div className="bg-muted/50 rounded-2xl border-2 border-foreground/10 p-4 sm:p-5">
-          <h4 className="text-xs sm:text-sm font-bold mb-3">Current Semester</h4>
-          <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-xs sm:text-sm text-muted-foreground">
+          <h4 className="text-xs sm:text-sm font-bold mb-3 font-display">Current Semester</h4>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-5 text-xs sm:text-sm text-muted-foreground">
             <span className="bg-card px-3 py-1.5 rounded-full border-2 border-foreground/10">
               SGPA: <strong className="text-foreground">{currentSGPA.toFixed(2)}</strong>
             </span>
@@ -119,7 +119,7 @@ export function CGPASection({ currentSGPA, currentCredits, courses, onCGPACalcul
             <Button 
               onClick={() => setShowResult(true)} 
               disabled={!canCalculate}
-              className="bg-pop-orange hover:bg-pop-orange/90 text-white font-bold rounded-full px-8 pop-shadow transition-all duration-200 hover:scale-105 hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:scale-100"
+              className="bg-pop-orange hover:bg-pop-orange/90 text-white font-bold font-display rounded-full px-6 sm:px-8 pop-shadow transition-all duration-200 hover:scale-105 hover:-translate-y-0.5 hover:pop-shadow-lg disabled:opacity-50 disabled:hover:scale-100 active:scale-95"
             >
               <Calculator className="w-5 h-5 mr-2" />
               Calculate New CGPA
@@ -128,10 +128,10 @@ export function CGPASection({ currentSGPA, currentCredits, courses, onCGPACalcul
         )}
 
         {showResult && result && (
-          <div className="space-y-5 sm:space-y-6 animate-bounce-in">
+          <div className="space-y-4 sm:space-y-6 animate-bounce-in">
             <Card className="bg-muted/30 border-dashed border-2 border-pop-orange/30 rounded-2xl">
               <CardHeader className="pb-2 px-4 sm:px-6">
-                <CardTitle className="text-xs sm:text-sm flex items-center gap-2 text-pop-orange font-bold">
+                <CardTitle className="text-xs sm:text-sm flex items-center gap-2 text-pop-orange font-bold font-display">
                   <Calculator className="w-4 h-4 sm:w-5 sm:h-5" />
                   CGPA Formula
                 </CardTitle>
@@ -151,23 +151,23 @@ export function CGPASection({ currentSGPA, currentCredits, courses, onCGPACalcul
                     = {result.totalGradePoints.toFixed(2)} ÷ {result.totalCredits}
                   </div>
                   <div className="text-foreground font-bold text-lg sm:text-xl">
-                    New CGPA = <span className="text-pop-orange">{result.cgpa.toFixed(2)}</span>
+                    New CGPA = <span className="text-pop-orange bg-pop-orange/10 px-2 py-0.5 rounded-lg">{result.cgpa.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 p-6 sm:p-8 bg-gradient-to-br from-pop-orange/10 to-pop-yellow/10 rounded-3xl border-3 border-pop-orange/30 pop-shadow-lg">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 p-5 sm:p-8 bg-gradient-to-br from-pop-orange/10 to-pop-yellow/10 rounded-3xl border-3 border-pop-orange/30 pop-shadow-lg">
               <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-muted-foreground">{previousCGPA}</div>
+                <div className="text-2xl sm:text-3xl font-bold font-display text-muted-foreground">{previousCGPA}</div>
                 <div className="text-[10px] sm:text-xs text-muted-foreground font-medium mt-1">Previous CGPA</div>
               </div>
-              <div className="w-12 h-12 rounded-full bg-pop-orange/20 flex items-center justify-center">
-                <ArrowRight className="w-6 h-6 text-pop-orange rotate-90 sm:rotate-0" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-pop-orange/20 flex items-center justify-center">
+                <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 text-pop-orange rotate-90 sm:rotate-0" />
               </div>
               <div className="text-center">
-                <div className="text-5xl sm:text-6xl font-black text-pop-orange drop-shadow-md">{result.cgpa.toFixed(2)}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground font-medium mt-1">New CGPA</div>
+                <div className="text-5xl sm:text-6xl font-black font-display text-pop-orange drop-shadow-md animate-pop-in">{result.cgpa.toFixed(2)}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground font-medium mt-1">New CGPA 🎉</div>
               </div>
             </div>
 
