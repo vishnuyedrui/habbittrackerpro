@@ -19,6 +19,10 @@ interface AuthDialogProps {
   onAuthenticated: (codeId: string, code: string) => void;
 }
 
+function codeToEmail(code: string) {
+  return `${code.toLowerCase().replace(/[^a-z0-9]/g, "_")}@habittracker.app`;
+}
+
 export default function AuthDialog({ open, onOpenChange, onAuthenticated }: AuthDialogProps) {
   const [mode, setMode] = useState<"enter" | "create">("enter");
   const [code, setCode] = useState("");
@@ -29,14 +33,24 @@ export default function AuthDialog({ open, onOpenChange, onAuthenticated }: Auth
     if (!trimmed) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const email = codeToEmail(trimmed);
+      // Sign in with Supabase Auth
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: trimmed,
+      });
+      if (signInError) {
+        toast({ title: "Code not found", description: "No account with that code exists, or wrong code.", variant: "destructive" });
+        return;
+      }
+      // Fetch user_code_id
+      const { data } = await supabase
         .from("user_codes")
         .select("id")
         .eq("code", trimmed)
         .maybeSingle();
-      if (error) throw error;
       if (!data) {
-        toast({ title: "Code not found", description: "No account with that code exists.", variant: "destructive" });
+        toast({ title: "Error", description: "Could not find your data.", variant: "destructive" });
         return;
       }
       onAuthenticated(data.id, trimmed);
@@ -57,21 +71,38 @@ export default function AuthDialog({ open, onOpenChange, onAuthenticated }: Auth
     }
     setLoading(true);
     try {
-      const { data: existing } = await supabase
-        .from("user_codes")
-        .select("id")
-        .eq("code", trimmed)
-        .maybeSingle();
-      if (existing) {
-        toast({ title: "Code taken", description: "That code is already in use. Try another.", variant: "destructive" });
+      const email = codeToEmail(trimmed);
+      // Sign up with Supabase Auth
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: trimmed,
+      });
+      if (signUpError) {
+        if (signUpError.message?.includes("already registered")) {
+          toast({ title: "Code taken", description: "That code is already in use. Try another.", variant: "destructive" });
+        } else {
+          toast({ title: "Error", description: signUpError.message, variant: "destructive" });
+        }
         return;
       }
+      if (!authData.user) {
+        toast({ title: "Error", description: "Could not create account.", variant: "destructive" });
+        return;
+      }
+      // Create user_codes row linked to auth user
       const { data, error } = await supabase
         .from("user_codes")
-        .insert({ code: trimmed })
+        .insert({ code: trimmed, user_id: authData.user.id })
         .select("id")
         .single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === "23505") {
+          toast({ title: "Code taken", description: "That code is already in use. Try another.", variant: "destructive" });
+        } else {
+          throw error;
+        }
+        return;
+      }
       onAuthenticated(data.id, trimmed);
       toast({ title: "Code created!", description: "Your personal page is ready." });
       onOpenChange(false);
