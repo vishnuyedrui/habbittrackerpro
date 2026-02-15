@@ -71,21 +71,55 @@ const Index = () => {
   // Drag state
   const dragIdx = useRef<number | null>(null);
 
-  // Show welcome dialog on first visit
+  // Restore auth session on mount
   useEffect(() => {
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        // User is signed in - fetch their code
+        const { data } = await supabase
+          .from("user_codes")
+          .select("id, code")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (data) {
+          setUserCodeId(data.id);
+          setUserCode(data.code);
+        }
+      } else if (event === "SIGNED_OUT") {
+        setUserCodeId(null);
+        setUserCode(null);
+        setHabits([]);
+        setCheckData([]);
+        setYearlyData([]);
+      }
+    });
+
+    // Check existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const { data } = await supabase
+          .from("user_codes")
+          .select("id, code")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (data) {
+          setUserCodeId(data.id);
+          setUserCode(data.code);
+          setWelcomeShown(true);
+        }
+      }
+    });
+
     if (!welcomeShown) {
       const stored = localStorage.getItem("ht_welcome_shown");
-      const storedCode = localStorage.getItem("ht_user_code");
-      const storedCodeId = localStorage.getItem("ht_user_code_id");
-      if (storedCode && storedCodeId) {
-        setUserCode(storedCode);
-        setUserCodeId(storedCodeId);
-        setWelcomeShown(true);
-      } else if (!stored) {
+      if (!stored) {
         setWelcomeDialogOpen(true);
       }
       setWelcomeShown(true);
     }
+
+    return () => subscription.unsubscribe();
   }, [welcomeShown]);
 
   // Load habits from DB when authenticated or week changes
@@ -286,18 +320,15 @@ const Index = () => {
   const handleAuthenticated = (codeId: string, code: string) => {
     setUserCodeId(codeId);
     setUserCode(code);
-    localStorage.setItem("ht_user_code", code);
-    localStorage.setItem("ht_user_code_id", codeId);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setUserCodeId(null);
     setUserCode(null);
     setHabits([]);
     setCheckData([]);
     setYearlyData([]);
-    localStorage.removeItem("ht_user_code");
-    localStorage.removeItem("ht_user_code_id");
     toast({ title: "Logged out", description: "You are now using a temporary page." });
   };
 
