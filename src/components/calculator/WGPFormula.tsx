@@ -35,16 +35,14 @@ export function WGPFormula({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 text-sm px-4 sm:px-5">
-        <div className="font-mono bg-card p-3 sm:p-4 rounded-xl border-2 border-foreground/10 space-y-1.5 overflow-x-auto text-xs sm:text-sm">
-          <div className="text-muted-foreground whitespace-nowrap">
+        <div className="font-mono bg-card p-3 sm:p-4 rounded-xl border-2 border-foreground/10 space-y-1.5 text-xs sm:text-sm">
+          <div className="text-muted-foreground break-words">
             WGP = (S1 × 0.30) + (S2 × 0.45) + (LE × 0.25)
           </div>
-          <div className="text-muted-foreground whitespace-nowrap">
-            WGP = ({assessments[0].gradePoint?.toFixed(1)} × 0.30) + (
-            {assessments[1].gradePoint?.toFixed(1)} × 0.45) + (
-            {assessments[2].gradePoint?.toFixed(1)} × 0.25)
+          <div className="text-muted-foreground break-words">
+            WGP = ({assessments[0].gradePoint?.toFixed(1)} × 0.30) + ({assessments[1].gradePoint?.toFixed(1)} × 0.45) + ({assessments[2].gradePoint?.toFixed(1)} × 0.25)
           </div>
-          <div className="text-muted-foreground whitespace-nowrap">
+          <div className="text-muted-foreground break-words">
             WGP = {(assessments[0].gradePoint! * 0.30).toFixed(2)} +{" "}
             {(assessments[1].gradePoint! * 0.45).toFixed(2)} +{" "}
             {(assessments[2].gradePoint! * 0.25).toFixed(2)}
@@ -57,21 +55,21 @@ export function WGPFormula({
         </div>
 
         {hasLab && labMarks !== null && finalGradePoint !== null && (
-          <div className="font-mono bg-card p-3 sm:p-4 rounded-xl border-2 border-pop-cyan/20 space-y-1.5 overflow-x-auto text-xs sm:text-sm">
+          <div className="font-mono bg-card p-3 sm:p-4 rounded-xl border-2 border-pop-cyan/20 space-y-1.5 text-xs sm:text-sm">
             <div className="flex items-center gap-2 text-pop-cyan font-bold font-display text-sm not-italic">
               <FlaskConical className="w-4 h-4" />
               Lab + Theory Calculation
             </div>
-            <div className="text-muted-foreground whitespace-nowrap">
+            <div className="text-muted-foreground break-words">
               Final GP = [(WGP ÷ 10 × 100 × 0.70) + (Lab × 0.30)] ÷ 10
             </div>
-            <div className="text-muted-foreground whitespace-nowrap">
+            <div className="text-muted-foreground break-words">
               Theory = ({wgp.toFixed(2)} ÷ 10) × 100 × 0.70 = {theoryContribution.toFixed(2)}
             </div>
-            <div className="text-muted-foreground whitespace-nowrap">
+            <div className="text-muted-foreground break-words">
               Lab = {labMarks} × 0.30 = {labContribution?.toFixed(2)}
             </div>
-            <div className="text-muted-foreground whitespace-nowrap">
+            <div className="text-muted-foreground break-words">
               Final % = {theoryContribution.toFixed(2)} + {labContribution?.toFixed(2)} = {finalPercentage?.toFixed(2)}
             </div>
             <div className="text-foreground font-bold text-base sm:text-lg">

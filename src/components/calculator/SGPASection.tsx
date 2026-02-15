@@ -123,11 +123,11 @@ export function SGPASection({ courses, onShowCGPA, cgpaData }: SGPASectionProps)
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 sm:space-y-3 text-xs sm:text-sm px-4 sm:px-6">
-                <div className="font-mono bg-card p-3 sm:p-4 rounded-xl border-2 border-foreground/10 space-y-1.5 overflow-x-auto">
-                  <div className="text-muted-foreground text-[10px] sm:text-xs whitespace-nowrap">
+                <div className="font-mono bg-card p-3 sm:p-4 rounded-xl border-2 border-foreground/10 space-y-1.5">
+                  <div className="text-muted-foreground text-[10px] sm:text-xs break-words">
                     SGPA = Σ(Credits × Grade Point) ÷ Σ(Total Credits)
                   </div>
-                  <div className="text-muted-foreground whitespace-nowrap text-xs">
+                  <div className="text-muted-foreground break-words text-xs">
                     SGPA = {result?.totalGradePoints.toFixed(0)} ÷ {result?.totalCredits}
                   </div>
                   <div className="text-foreground font-bold text-lg sm:text-xl">
