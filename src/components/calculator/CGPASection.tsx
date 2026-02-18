@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, Calculator, ArrowRight } from "lucide-react";
+import { TrendingUp, Calculator, ArrowRight, Download } from "lucide-react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import confetti from "canvas-confetti";
+import { generateGradeCard } from "@/lib/gradecard-generator";
 
 interface CGPASectionProps {
   currentSGPA: number;
@@ -171,10 +172,30 @@ export function CGPASection({ currentSGPA, currentCredits, courses, onCGPACalcul
               </div>
             </div>
 
-            <div className="text-center text-xs sm:text-sm text-muted-foreground">
+            <div className="text-center text-xs sm:text-sm text-muted-foreground space-y-3">
               <span className="bg-card px-4 py-2 rounded-full border-2 border-foreground/10 inline-block">
                 Total Credits Completed: <strong className="text-foreground">{result.totalCredits}</strong>
               </span>
+              <div>
+                <Button
+                  onClick={() => {
+                    const sgpaResult = calculateSGPA(courses.filter(c => c.finalGradePoint !== null && c.name.trim() !== ''));
+                    if (sgpaResult) {
+                      generateGradeCard(courses, sgpaResult, {
+                        cgpa: result.cgpa,
+                        previousCGPA: parseFloat(previousCGPA),
+                        previousCredits: parseInt(previousCredits),
+                        newTotalCredits: result.totalCredits,
+                      });
+                    }
+                  }}
+                  size="lg"
+                  className="rounded-full bg-pop-pink hover:bg-pop-pink/90 text-white font-bold font-display transition-all duration-300 hover:scale-[1.02] hover:pop-shadow active:scale-95"
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Download Grade Card
+                </Button>
+              </div>
             </div>
           </div>
         )}
