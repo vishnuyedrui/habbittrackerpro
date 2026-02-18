@@ -1,7 +1,8 @@
 import { Course, calculateSGPA } from "@/types/calculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, Award } from "lucide-react";
+import { Calculator, TrendingUp, Award, Download } from "lucide-react";
+import { generateGradeCard } from "@/lib/gradecard-generator";
 import { useState, useEffect, useRef } from "react";
 import { GradeBadge } from "./GradeBadge";
 import confetti from "canvas-confetti";
@@ -161,6 +162,14 @@ export function SGPASection({ courses, onShowCGPA, cgpaData }: SGPASectionProps)
               >
                 <TrendingUp className="w-5 h-5 mr-2" />
                 Calculate CGPA (Optional)
+              </Button>
+              <Button 
+                onClick={() => generateGradeCard(courses, result!, cgpaData)}
+                size="lg"
+                className="w-full sm:w-auto sm:flex-1 rounded-full bg-pop-pink hover:bg-pop-pink/90 text-white font-bold font-display transition-all duration-300 hover:scale-[1.02] hover:pop-shadow active:scale-95"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Download Grade Card
               </Button>
             </div>
           </div>
