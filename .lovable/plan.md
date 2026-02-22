@@ -1,65 +1,43 @@
 
-# Add "Absolute Grading" Mode to Course Cards
+
+# Add Footer with TeamDino Branding and Social Links
 
 ## Overview
-Add a toggle on each course card that switches between the existing "Relative Grading" (sessional-based WGP calculation) and a new "Absolute Grading" mode. In Absolute Grading, the user enters Marks Obtained and Maximum Marks, and the grade is auto-calculated from the percentage.
+Create a new `Footer` component with a dark theme (matching the navbar), displaying "TeamDino" branding, copyright text, and colorful Instagram/WhatsApp logo icons linking to the provided URLs. The uploaded logo images will be copied into the project and used directly.
 
-## How It Works
-- Each course card gets a grading mode toggle: **Relative** (default, current behavior) or **Absolute**
-- When "Absolute" is selected, the sessional assessment table is hidden and replaced with two input fields: **Marks Obtained** and **Maximum Marks**
-- Percentage is calculated automatically: `(obtained / max) * 100`
-- Grade is assigned based on the percentage scale:
-  - 90+ = O (GP 10)
-  - 80-89 = A+ (GP 9)
-  - 70-79 = A (GP 8)
-  - 60-69 = B+ (GP 7)
-  - 50-59 = B (GP 6)
-  - 40-49 = P (GP 4)
-  - Below 40 = F (GP 0)
-- The resulting `finalGradePoint` and `letterGrade` feed into the existing SGPA/CGPA calculation, so everything updates dynamically
-- Lab toggle still works in Absolute mode (lab marks adjust the final GP the same way)
-- Switching modes resets the course's grade data to avoid stale values
+## Layout Reference
+Based on the uploaded screenshot, the footer will have:
+- Dark background matching the navbar
+- "TeamDino" name on the left
+- Copyright text centered
+- Instagram and WhatsApp icons on the right, using the uploaded colorful logos
 
 ## Changes
 
-### 1. Update `src/types/calculator.ts`
-- Add `gradingMode: "relative" | "absolute"` to the `Course` interface (default: `"relative"`)
-- Add `absoluteMarks: number | null` and `absoluteMaxMarks: number | null` to the `Course` interface
-- Add a helper function `calculateAbsoluteGrade(obtained, max)` that returns `{ gradePoint, letterGrade, percentage }`
-- Update `createNewCourse()` to include the new fields with defaults
+### 1. Copy uploaded images into the project
+- Copy `user-uploads://2227.jpg` to `src/assets/instagram-logo.jpg`
+- Copy `user-uploads://410199-PD37U2-851.jpg` to `src/assets/whatsapp-logo.jpg`
 
-### 2. Update `src/components/calculator/CourseCard.tsx`
-- Add a two-option toggle (Relative / Absolute) below the course name and credits row
-- When mode is "Absolute":
-  - Hide the assessment grades table entirely
-  - Show two inputs: "Marks Obtained" and "Maximum Marks"
-  - Show calculated percentage and auto-assigned grade in real-time
-  - On input change, compute the grade and call `onUpdate` with updated `finalGradePoint`, `letterGrade`, and `wgp`
-- When mode is "Relative": show the existing sessional-based UI (no changes)
-- Switching modes resets grade-related fields (`wgp`, `finalGradePoint`, `letterGrade`, assessments, absolute marks)
+### 2. Create `src/components/Footer.tsx`
+- Dark background (`hsl(240, 15%, 6%)`) matching the navbar
+- Left section: TeamDino logo (`/logo.png`) + "TeamDino" text
+- Center: `Copyright 2026 TeamDino | All rights reserved` in italic muted text
+- Right section: Instagram and WhatsApp icons (32x32px, rounded, object-cover) as links opening in new tabs
+- Responsive: stack vertically on mobile, horizontal on desktop
+- Hover effect on social icons (slight scale up)
 
-### 3. No changes needed to SGPA/CGPA logic
-- The `calculateSGPA` function already reads `finalGradePoint` and `credits` from each course, so Absolute Grading courses will be included automatically
+### 3. Update `src/App.tsx`
+- Import and render `<Footer />` below the `<Routes>` block so it appears on every page
 
 ## Technical Details
 
-**Absolute Grade Scale:**
-```text
-Percentage    Letter    Grade Point
->= 90         O         10
-80 - 89       A+         9
-70 - 79       A          8
-60 - 69       B+         7
-50 - 59       B          6
-40 - 49       P          4
-< 40          F          0
-```
-
-**New Course fields:**
-- `gradingMode`: `"relative"` | `"absolute"` (default `"relative"`)
-- `absoluteMarks`: `number | null`
-- `absoluteMaxMarks`: `number | null` (default `100`)
+**Files created:**
+- `src/components/Footer.tsx`
 
 **Files modified:**
-- `src/types/calculator.ts` -- new fields and helper function
-- `src/components/calculator/CourseCard.tsx` -- mode toggle UI and absolute grading inputs
+- `src/App.tsx` -- add Footer import and render
+
+**Assets copied:**
+- `src/assets/instagram-logo.jpg` -- colorful Instagram logo
+- `src/assets/whatsapp-logo.jpg` -- colorful WhatsApp logo
+
