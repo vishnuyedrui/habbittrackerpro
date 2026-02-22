@@ -17,8 +17,8 @@ export function Footer() {
         <div className="flex items-center gap-3">
           <a
             href="https://www.instagram.com/yedurivishnuvardhan"
-            target="_blank"
-            rel="noopener noreferrer"
+
+
             className="transition-transform duration-200 hover:scale-110"
           >
             <img
@@ -29,8 +29,8 @@ export function Footer() {
           </a>
           <a
             href="https://chat.whatsapp.com/IfNt62pbL79HOGVttxoMfv"
-            target="_blank"
-            rel="noopener noreferrer"
+
+
             className="transition-transform duration-200 hover:scale-110"
           >
             <img
