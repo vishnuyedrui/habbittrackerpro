@@ -1,43 +1,37 @@
 
 
-# Embed External Links Below Navbar with Light Bar on All Items
+# Fix Coffee Cup Background and Enhance Steam Animation
 
 ## Overview
-Instead of navigating away when clicking external links, the app will show the external content in a full-page iframe below the navbar. The glowing light bar indicator will also extend to cover all navigation items (both internal routes and external links).
+Two issues to fix: remove the visible dark rectangular background behind the coffee cup image, and make the steam particles larger with a wispy/wavy animation path.
 
 ## Changes
 
-### 1. Add new routes for external pages (`src/App.tsx`)
-- Add three new routes: `/external/teamdino`, `/external/feedback`, `/external/coffee`
-- Each route renders a new `ExternalPage` component that displays the target URL in a full-height iframe
+### 1. Remove dark background behind coffee cup (`src/components/FloatingCoffee.tsx`)
+- The dark rectangle is caused by the coffee cup PNG having a non-transparent background. The container div and the `motion.div` wrapper may also be contributing with default background styles.
+- Remove any background styling from the wrapper elements.
+- Add `mix-blend-mode` or ensure the image itself has no background by making the container fully transparent.
+- Remove the `bg-background/80` from the "Buy me a coffee" label or make it more subtle.
 
-### 2. Create `src/components/ExternalPage.tsx` (new file)
-- Accepts a `url` prop
-- Renders a full-height `<iframe>` that fills the space between the navbar and footer
-- Uses `w-full` and calculated height (`calc(100vh - navbar - footer)`) to maximize the visible area
+### 2. Enhance steam particles (`src/components/FloatingCoffee.tsx`)
+- Increase particle sizes (from 4-8px to 6-14px range)
+- Increase opacity (from 0.5 peak to 0.7 peak) using `bg-foreground/20` instead of `bg-foreground/10`
+- Add wavy/wispy motion by using keyframe arrays for the `x` property to create a sinusoidal path (e.g., `x: [0, 4, -4, 6]`) instead of a straight line
+- Increase the vertical travel distance for more dramatic steam effect
+- Add more particles (5 instead of 3) for a fuller look
 
-### 3. Update `src/components/Navbar.tsx`
-- Convert external links from `<a>` tags to React Router `<NavLink>` components pointing to the new `/external/*` routes
-- Merge all nav items (internal + external) into a single unified list so the `navRefs` array covers all items
-- The glowing light bar indicator will now track all items, moving to whichever is active (internal or external)
-- On mobile, external items in the hamburger menu also become `<NavLink>` elements
+### Technical Details
 
-## Technical Details
+**Steam particle changes:**
+- Class: `bg-foreground/20` (more visible)
+- Size range: `6 + i * 3` pixels
+- Y animation: longer travel (`-24 - i * 6`)
+- X animation: wavy path using multi-point keyframe arrays like `[0, 5, -3, 7, 0]`
+- Container: taller (`h-12`) to accommodate larger travel
 
-**Unified nav items structure:**
-```text
-Index  Label              Route                  Icon
-0      Grade Calculator   /                      Calculator
-1      Habit Tracker      /habits                CheckSquare
-2      TeamDino           /external/teamdino     Globe
-3      Feedback           /external/feedback     MessageSquare
-4      Buy Me a Coffee    /external/coffee       Coffee
-```
+**Background fix:**
+- Ensure no background color or dark overlay on the coffee image container
+- The image should float transparently over the page content
 
-**Files created:**
-- `src/components/ExternalPage.tsx` -- iframe wrapper component
-
-**Files modified:**
-- `src/App.tsx` -- add routes for `/external/teamdino`, `/external/feedback`, `/external/coffee`
-- `src/components/Navbar.tsx` -- unify all items into one `navItems` array using `NavLink`, extend light bar to all items
-
+**File modified:**
+- `src/components/FloatingCoffee.tsx`
