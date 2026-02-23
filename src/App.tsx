@@ -9,6 +9,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import GradeCalculator from "./pages/GradeCalculator";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { ExternalPage } from "./components/ExternalPage";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<GradeCalculator />} />
             <Route path="/habits" element={<Index />} />
+            <Route path="/external/teamdino" element={<ExternalPage url="https://teamdino.in" />} />
+            <Route path="/external/feedback" element={<ExternalPage url="https://docs.google.com/forms/d/e/1FAIpQLSffSEUgxpJZ4i14s1E0cFQmheKTlS6uKGajijuL3YMBUY4txg/viewform?usp=publish-editor" />} />
+            <Route path="/external/coffee" element={<ExternalPage url="https://razorpay.me/@teamdino" />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
