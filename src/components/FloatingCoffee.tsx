@@ -102,6 +102,33 @@ export function FloatingCoffee() {
           transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
           className="relative"
         >
+          {/* Steam particles */}
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-12 h-8 pointer-events-none">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="absolute rounded-full bg-foreground/10"
+                style={{
+                  width: 4 + i * 2,
+                  height: 4 + i * 2,
+                  left: `${30 + i * 15}%`,
+                  bottom: 0,
+                }}
+                animate={{
+                  y: [-2, -18 - i * 4],
+                  x: [0, (i - 1) * 6],
+                  opacity: [0, 0.5, 0],
+                  scale: [0.5, 1.2],
+                }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 1.5 + i * 0.3,
+                  delay: i * 0.4,
+                  ease: "easeOut",
+                }}
+              />
+            ))}
+          </div>
           <img
             src={coffeeCup}
             alt="Buy me a coffee"
