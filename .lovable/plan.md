@@ -1,121 +1,47 @@
 
-Goal: stop the repeated “Extraction failed — Failed to send a request to the Edge Function” error and make `.txt` uploads work even if the browser can’t reach backend functions.
 
-What I found from investigation:
-- The backend functions are currently healthy and text-capable:
-  - direct calls to `extract-timetable` and `extract-attendance` return `200`
-  - response headers include `X-Function-Version: 2026-02-25-text-support-v2`
-- In your failing browser attempt, request body was correctly built (`textContent`), but it ended with `Failed to fetch`.
-- That specific failure means the request likely failed before function execution (browser/network/CORS preflight layer), because there is no matching function execution log at that request time.
-- I also noticed the failing payload was attendance-style text sent to `extract-timetable` (step 1). That won’t cause `Failed to fetch`, but it’s a UX mismatch we should guard against.
+# Speed Up External Pages (TeamDino, Feedback, Buy Me a Coffee)
 
-Do I know what the issue is?
-Yes:
-1) Primary issue: browser-side transport/preflight failure to backend function endpoint (not extraction logic).
-2) Secondary issue: fragile dependency on backend for `.txt`, so any temporary network/preflight issue breaks the entire flow.
+## Problem
+The three external pages (TeamDino, Feedback Form, Buy Me a Coffee) each use an iframe that loads a full external website. Every time you navigate to one, the entire remote site loads from scratch, causing noticeable delays. This is a fundamental limitation of embedding external sites.
 
-Implementation plan (fix + practical alternative):
+## Solution
+Improve the experience with two key changes:
 
-1. Harden backend function CORS/preflight handling (both functions)
-Files:
-- `supabase/functions/extract-timetable/index.ts`
-- `supabase/functions/extract-attendance/index.ts`
+### 1. Add a Loading State with Skeleton/Spinner
+Show a visual loading indicator while the iframe content loads, so users know the page is working and not frozen.
 
-Changes:
-- In `OPTIONS` handler, echo requested headers dynamically:
-  - read `access-control-request-headers` from request
-  - return that value in `Access-Control-Allow-Headers`
-- Always return explicit:
-  - `Access-Control-Allow-Methods: POST, OPTIONS`
-  - `Access-Control-Max-Age` (preflight cache)
-- Keep `Access-Control-Allow-Origin: *` and ensure all success/error responses include full CORS headers.
-- Add lightweight request tracing logs for method/origin/header list so future transport issues are diagnosable quickly.
+### 2. Open External Links in New Tabs Instead of Iframes
+For TeamDino and Buy Me a Coffee (Razorpay), open them in a new browser tab instead of embedding. This is faster because:
+- The browser handles it natively without the overhead of your app's layout
+- Many sites (especially payment pages) work better outside iframes
+- Users can continue using your app while the external site loads separately
 
-Why:
-- Prevents failures when client/runtime adds headers not present in hardcoded allowlist.
-- Reduces intermittent browser-side “Failed to fetch” preflight breaks.
+The Feedback form (Google Forms) can remain as an iframe since it embeds well, but with a loading spinner added.
 
-2. Add deterministic local parser for `.txt` files (network-independent fallback and default path)
-New file:
-- `src/lib/attendance-text-parser.ts`
+## Technical Details
 
-Implement:
-- `parseAttendanceText(text): SubjectAttendance[] | null`
-  - robust line parser for rows like:
-    `CODE  Subject Name  Present  Total  Percentage`
-  - support irregular spaces and missing `%` symbol
-  - sanitize control chars (`\f`, repeated whitespace)
-- `parseTimetableText(text): TimetableSchedule | null`
-  - support common formats:
-    - `Monday: CS101, MA101, ...`
-    - table-like day rows
-  - normalize day aliases (Mon/Monday, Tue/Tuesday, etc.)
-- Return confidence/validity signals (minimum parsed rows, required days).
+### Changes to `src/components/ExternalPage.tsx`
+- Add an `onLoad` handler to the iframe to detect when it finishes loading
+- Show a centered spinner/skeleton overlay until the iframe fires `onLoad`
 
-Why:
-- `.txt` extraction should not rely on backend AI for common structured files.
-- Eliminates this class of network-related blocking for `.txt`.
+### Changes to `src/components/Navbar.tsx`
+- For TeamDino and Buy Me a Coffee nav items, change from internal `NavLink` routes to `<a>` tags with `target="_blank"` and `rel="noopener noreferrer"`
+- Keep the Feedback form as an internal route with iframe
 
-3. Use local parser first for text uploads, then backend AI fallback only if parsing confidence is low
-File:
-- `src/pages/AttendanceCalculator.tsx`
+### Changes to `src/App.tsx`
+- Remove the `/external/teamdino` and `/external/coffee` routes since they'll open in new tabs
+- Keep `/external/feedback` route
 
-Changes:
-- In `extractTimetable` and `extractAttendance`:
-  - if `result.type === "text"`:
-    - attempt local parser first
-    - if success: set state immediately and show “Parsed locally” toast
-    - if fail: call backend function as fallback
-- Keep image flow unchanged (AI extraction + image retry logic).
-- Improve transport error messages:
-  - map function-fetch errors to: “Couldn’t reach backend service. We’ll keep local parsing for .txt; check connection or retry.”
+### Alternative Approach (if you prefer keeping everything in-app)
+If you'd rather keep all pages embedded inside your app, we can instead:
+- Add loading spinners to all three iframes
+- Use `loading="lazy"` on the iframes
+- This won't make the external sites load faster, but will make the wait feel less jarring
 
-Why:
-- Makes `.txt` flow fast and resilient.
-- Backend remains available for complex/unstructured text.
+### Files Modified
+- `src/components/ExternalPage.tsx` -- add loading state
+- `src/components/Navbar.tsx` -- open TeamDino and Coffee in new tabs
+- `src/App.tsx` -- remove unused routes
+- `src/components/FloatingCoffee.tsx` -- update coffee link to open in new tab
 
-4. Add guardrails for wrong-file-in-wrong-step UX
-File:
-- `src/pages/AttendanceCalculator.tsx` (or parser helper)
-
-Changes:
-- If step 1 text strongly matches attendance table (has `present`, `total`, `percentage` columns):
-  - show clear toast: “This looks like attendance data—please upload it in Step 2.”
-  - optionally offer auto-step switch (if existing UI pattern supports it).
-- If step 2 text looks timetable-like, do equivalent warning.
-
-Why:
-- Prevents confusion from uploading attendance text into timetable extractor.
-
-5. Keep manual-edit alternative always usable
-Existing components already support manual editing:
-- `TimetableEditor`
-- `AttendanceEditor`
-
-Small UX additions:
-- add hint text near uploader:
-  - “If upload fails, you can paste/edit data manually below.”
-- ensure editor remains visible for quick manual entry when extraction fails.
-
-Why:
-- Gives user progress path even during transient network issues.
-
-Validation checklist (end-to-end):
-1) Timetable `.txt` with clean format:
-- parses locally, no backend call required, editor fills.
-2) Attendance `.txt` with copied portal text (including odd spacing/form feed):
-- parses locally or falls back and still succeeds.
-3) Simulated backend unreachable case:
-- `.txt` still works via local parser.
-4) Image uploads still work:
-- AI extraction + retry unchanged.
-5) Wrong-step upload:
-- user gets clear corrective prompt.
-6) Regression:
-- step navigation, calculations, and PDF generation remain intact.
-
-Scope and risk:
-- No database schema changes required.
-- No auth flow changes required.
-- Main risk is parser strictness; mitigated by backend fallback for ambiguous text.
-- This is the most reliable path because it fixes transport fragility and removes backend dependency for `.txt` at the same time.
