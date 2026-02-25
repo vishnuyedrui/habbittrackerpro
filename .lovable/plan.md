@@ -1,69 +1,51 @@
 
-Root cause confirmed from logs:
-- I checked the backend function logs for `extract-timetable`.
-- Requests are reaching the function (so this is not a browser CORS/preflight block anymore).
-- The function fails when calling the AI gateway with:
-  - HTTP 400
-  - Provider error: `INVALID_ARGUMENT`
-  - Message: `Unable to process input image`
-- Do I know what the issue is? Yes.
 
-What is actually broken:
-- The frontend now compresses images as JPEG (`canvas.toDataURL("image/jpeg", ...)`), then strips the prefix and sends only raw base64.
-- The backend reconstructs the image as `data:image/png;base64,...`.
-- That means JPEG bytes are being labeled as PNG, which can cause the model provider to reject the image as invalid/corrupt input.
+## Fix: Timetable Image Extraction Keeps Failing
 
-Implementation plan to fix this reliably:
+### Problem
+The Gemini AI model consistently rejects uploaded timetable images with "Unable to process input image" even though the MIME type is now correctly set. The images are too large after compression (up to ~3MB base64), causing either AI rejection or network timeouts.
 
-1) Pass image MIME type from uploader to caller
-- File: `src/components/attendance/ImageUploader.tsx`
-- Change `onImageSelected` contract from `(base64: string) => void` to something like `(image: { base64: string; mimeType: string }) => void`.
-- In compression step, return both:
-  - `base64` (compressed image bytes)
-  - `mimeType` (actual output type, e.g. `image/jpeg`).
-- Keep preview behavior unchanged.
+### Solution: Three-pronged fix
 
-2) Send MIME type in function invoke payloads
-- File: `src/pages/AttendanceCalculator.tsx`
-- Update both extraction handlers (`extractTimetable`, `extractAttendance`) to accept `{ base64, mimeType }`.
-- Invoke backend functions with:
-  - `imageBase64`
-  - `mimeType`
-- Keep existing loading states and toasts.
+### 1. Reduce image size more aggressively
+**File**: `src/components/attendance/ImageUploader.tsx`
+- Reduce `MAX_DIMENSION` from 1600 to 1024 pixels
+- Reduce `JPEG_QUALITY` from 0.8 to 0.6
+- Reduce `MAX_BASE64_LENGTH` from 4MB to 1.5MB
+- This ensures the payload stays small enough for reliable processing
 
-3) Use MIME type when building `data:` URL in backend functions
-- Files:
-  - `supabase/functions/extract-timetable/index.ts`
-  - `supabase/functions/extract-attendance/index.ts`
-- Parse `mimeType` from request body, validate it against allowed image types (`image/jpeg`, `image/png`, `image/webp`), and default safely.
-- Build `image_url.url` as:
-  - ``data:${mimeType};base64,${imageBase64}``
-- This removes the PNG/JPEG mismatch causing INVALID_ARGUMENT.
+### 2. Switch to a more capable vision model
+**Files**: `supabase/functions/extract-timetable/index.ts`, `supabase/functions/extract-attendance/index.ts`
+- Change model from `google/gemini-2.5-flash` to `google/gemini-2.5-pro`
+- The Pro model is documented as "Strongest at handling image-text" and handles edge cases better
+- Also add a request timeout to prevent hanging requests
 
-4) Improve error mapping for provider image failures
-- Files:
-  - `supabase/functions/extract-timetable/index.ts`
-  - `supabase/functions/extract-attendance/index.ts`
-  - `src/pages/AttendanceCalculator.tsx` (small message polish)
-- If gateway returns 400 with provider “Unable to process input image”, return a clear user-facing error:
-  - “This image format/quality could not be read. Try a clearer screenshot or crop tightly around the timetable.”
-- Keep manual entry path usable.
+### 3. Add retry logic on the frontend
+**File**: `src/pages/AttendanceCalculator.tsx`
+- If extraction fails with an image-related error, automatically retry once with further reduced quality
+- Show clearer error messages guiding the user to crop or use a clearer image
 
-5) Verification checklist (end-to-end)
-- Test timetable upload with:
-  - regular screenshot
-  - very large screenshot
-  - photo from phone camera
-- Confirm:
-  - No 400 INVALID_ARGUMENT for valid images
-  - `extract-timetable` logs show successful tool call path
-  - UI displays “Timetable extracted” and editor fills data
-- Regression:
-  - Attendance extraction still works with same MIME handling
-  - Preview and clear actions still function
-  - No changes to calculation/PDF flow
+### Technical Details
 
-Technical notes:
-- No database migration needed.
-- No auth changes needed.
-- This is a data-URL construction bug (media type mismatch), not a transport/CORS issue.
+**ImageUploader.tsx changes:**
+```
+MAX_DIMENSION: 1600 -> 1024
+JPEG_QUALITY: 0.8 -> 0.6
+MAX_BASE64_LENGTH: 4MB -> 1.5MB
+```
+
+**Edge function model change:**
+```
+model: "google/gemini-2.5-flash" -> "google/gemini-2.5-pro"
+```
+
+**AttendanceCalculator.tsx:**
+- Add a single retry with further compressed image (800px, 0.4 quality) if first attempt fails
+- Better user-facing error messages
+
+### Why this should work
+- Smaller images mean faster uploads, smaller payloads, and less chance of Gemini rejecting them
+- The Pro model has better image understanding capabilities
+- Retry with even smaller image gives a second chance for tricky images
+
+### No database or auth changes needed
