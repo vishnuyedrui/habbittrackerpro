@@ -15,6 +15,12 @@ import { ResultsDashboard } from "@/components/attendance/ResultsDashboard";
 import { WhatIfSimulator } from "@/components/attendance/WhatIfSimulator";
 import { calculateSubjectResults, calculateOverallResult } from "@/lib/attendance-calculator";
 import { generateAttendancePDF } from "@/lib/attendance-pdf";
+import {
+  parseTimetableText,
+  parseAttendanceText,
+  looksLikeAttendance,
+  looksLikeTimetable,
+} from "@/lib/attendance-text-parser";
 import type { TimetableSchedule, SubjectAttendance, AttendanceConfig, DayOfWeek } from "@/types/attendance";
 
 const defaultConfig: AttendanceConfig = {
@@ -58,7 +64,6 @@ export default function AttendanceCalculator() {
     msg.includes("image") || msg.includes("Unable to process") || msg.includes("INVALID_ARGUMENT");
 
   const parseEdgeFunctionError = (e: any): string => {
-    // Try to extract JSON error from the response
     if (e?.context?.body) {
       try {
         const body = typeof e.context.body === "string" ? JSON.parse(e.context.body) : e.context.body;
@@ -67,7 +72,7 @@ export default function AttendanceCalculator() {
     }
     const msg = e?.message || "";
     if (msg.includes("fetch") || msg.includes("network") || msg.includes("Failed to fetch"))
-      return "Network error — check your connection and try again.";
+      return "Couldn't reach backend service. For .txt files, try the format shown in the hint. You can also edit data manually below.";
     return msg || "Extraction failed. Please try again.";
   };
 
@@ -81,6 +86,47 @@ export default function AttendanceCalculator() {
       setTtImage(null);
     }
 
+    // For text uploads: local parse first
+    if (result.type === "text") {
+      // Wrong-step guardrail
+      if (looksLikeAttendance(result.textContent) && !looksLikeTimetable(result.textContent)) {
+        toast({
+          title: "Wrong step?",
+          description: "This looks like attendance data. Please upload it in Step 2 instead.",
+          variant: "destructive",
+        });
+        setTtLoading(false);
+        setTtText(null);
+        return;
+      }
+
+      const localResult = parseTimetableText(result.textContent);
+      if (localResult) {
+        setTimetable(localResult);
+        toast({ title: "Timetable parsed!", description: "Parsed locally — review and edit below." });
+        setTtLoading(false);
+        return;
+      }
+
+      // Local parse failed, try backend AI
+      try {
+        const { data, error } = await supabase.functions.invoke("extract-timetable", {
+          body: { textContent: result.textContent },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        setTimetable(data);
+        toast({ title: "Timetable extracted!", description: "Review and edit below." });
+      } catch (e: any) {
+        const msg = parseEdgeFunctionError(e);
+        toast({ title: "Extraction failed", description: msg, variant: "destructive" });
+      } finally {
+        setTtLoading(false);
+      }
+      return;
+    }
+
+    // Image flow (unchanged)
     const buildBody = (r: FileUploadResult) =>
       r.type === "text"
         ? { textContent: r.textContent }
@@ -95,8 +141,7 @@ export default function AttendanceCalculator() {
       setTimetable(data);
       toast({ title: "Timetable extracted!", description: "Review and edit below." });
     } catch (e: any) {
-      // Retry with smaller image only for image inputs
-      if (result.type === "image" && isImageError(e.message || "")) {
+      if (isImageError(e.message || "")) {
         try {
           toast({ title: "Retrying with smaller image..." });
           const smaller = await compressImageFromBase64(result.base64, RETRY_MAX_DIMENSION, RETRY_JPEG_QUALITY);
@@ -129,6 +174,47 @@ export default function AttendanceCalculator() {
       setAttImage(null);
     }
 
+    // For text uploads: local parse first
+    if (result.type === "text") {
+      // Wrong-step guardrail
+      if (looksLikeTimetable(result.textContent) && !looksLikeAttendance(result.textContent)) {
+        toast({
+          title: "Wrong step?",
+          description: "This looks like a timetable. Please upload it in Step 1 instead.",
+          variant: "destructive",
+        });
+        setAttLoading(false);
+        setAttText(null);
+        return;
+      }
+
+      const localResult = parseAttendanceText(result.textContent);
+      if (localResult) {
+        setAttendance(localResult);
+        toast({ title: "Attendance parsed!", description: "Parsed locally — review and edit below." });
+        setAttLoading(false);
+        return;
+      }
+
+      // Local parse failed, try backend AI
+      try {
+        const { data, error } = await supabase.functions.invoke("extract-attendance", {
+          body: { textContent: result.textContent },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        setAttendance(data);
+        toast({ title: "Attendance extracted!", description: "Review and edit below." });
+      } catch (e: any) {
+        const msg = parseEdgeFunctionError(e);
+        toast({ title: "Extraction failed", description: msg, variant: "destructive" });
+      } finally {
+        setAttLoading(false);
+      }
+      return;
+    }
+
+    // Image flow (unchanged)
     const buildBody = (r: FileUploadResult) =>
       r.type === "text"
         ? { textContent: r.textContent }
@@ -143,7 +229,7 @@ export default function AttendanceCalculator() {
       setAttendance(data);
       toast({ title: "Attendance extracted!", description: "Review and edit below." });
     } catch (e: any) {
-      if (result.type === "image" && isImageError(e.message || "")) {
+      if (isImageError(e.message || "")) {
         try {
           toast({ title: "Retrying with smaller image..." });
           const smaller = await compressImageFromBase64(result.base64, RETRY_MAX_DIMENSION, RETRY_JPEG_QUALITY);
@@ -218,9 +304,10 @@ export default function AttendanceCalculator() {
                   previewText={ttText}
                   onClear={() => { setTtImage(null); setTtText(null); setTimetable({}); }}
                 />
-                {Object.keys(timetable).length > 0 && (
-                  <TimetableEditor schedule={timetable} onChange={setTimetable} />
-                )}
+                <p className="text-xs text-muted-foreground text-center">
+                  💡 .txt format: <code className="bg-muted px-1 rounded">Monday: CS101, MA101, PH101</code> — one line per day. You can also edit manually below.
+                </p>
+                <TimetableEditor schedule={timetable} onChange={setTimetable} />
               </>
             )}
 
@@ -235,6 +322,9 @@ export default function AttendanceCalculator() {
                   previewText={attText}
                   onClear={() => { setAttImage(null); setAttText(null); setAttendance([]); }}
                 />
+                <p className="text-xs text-muted-foreground text-center">
+                  💡 .txt format: <code className="bg-muted px-1 rounded">CS101  Computer Science  45  60  75</code> — one subject per line. You can also edit manually below.
+                </p>
                 <AttendanceEditor subjects={attendance} onChange={setAttendance} />
               </>
             )}
