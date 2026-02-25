@@ -3,6 +3,7 @@ import { Upload, Image, Loader2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 interface ImageUploaderProps {
   label: string;
@@ -13,19 +14,55 @@ interface ImageUploaderProps {
   onClear?: () => void;
 }
 
+const MAX_DIMENSION = 1600;
+const JPEG_QUALITY = 0.8;
+const MAX_BASE64_LENGTH = 4 * 1024 * 1024; // ~3MB decoded
+
+function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        const scale = MAX_DIMENSION / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+      const base64 = dataUrl.split(",")[1];
+      if (base64.length > MAX_BASE64_LENGTH) {
+        reject(new Error("Image is still too large after compression. Please use a smaller or cropped image."));
+        return;
+      }
+      resolve(base64);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read image file."));
+    };
+    img.src = url;
+  });
+}
+
 export function ImageUploader({ label, description, onImageSelected, isLoading, preview, onClear }: ImageUploaderProps) {
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const processFile = useCallback((file: File) => {
+  const processFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      const base64 = result.split(",")[1];
+    try {
+      const base64 = await compressImage(file);
       onImageSelected(base64);
-    };
-    reader.readAsDataURL(file);
+    } catch (e: any) {
+      toast({ title: "Image error", description: e.message, variant: "destructive" });
+    }
   }, [onImageSelected]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -59,7 +96,7 @@ export function ImageUploader({ label, description, onImageSelected, isLoading, 
               </Button>
             )}
           </div>
-          <img src={`data:image/png;base64,${preview}`} alt={label} className="w-full rounded-lg max-h-48 object-contain bg-muted" />
+          <img src={`data:image/jpeg;base64,${preview}`} alt={label} className="w-full rounded-lg max-h-48 object-contain bg-muted" />
         </CardContent>
       </Card>
     );

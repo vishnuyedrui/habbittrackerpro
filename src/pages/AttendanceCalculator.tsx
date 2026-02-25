@@ -63,7 +63,10 @@ export default function AttendanceCalculator() {
       setTimetable(data);
       toast({ title: "Timetable extracted!", description: "Review and edit below." });
     } catch (e: any) {
-      toast({ title: "Extraction failed", description: e.message, variant: "destructive" });
+      const msg = e.message?.includes("fetch") || e.message?.includes("network")
+        ? "Network error — try a smaller/cropped image or check your connection."
+        : e.message || "Extraction failed";
+      toast({ title: "Extraction failed", description: msg, variant: "destructive" });
     } finally {
       setTtLoading(false);
     }
@@ -81,7 +84,10 @@ export default function AttendanceCalculator() {
       setAttendance(data);
       toast({ title: "Attendance extracted!", description: "Review and edit below." });
     } catch (e: any) {
-      toast({ title: "Extraction failed", description: e.message, variant: "destructive" });
+      const msg = e.message?.includes("fetch") || e.message?.includes("network")
+        ? "Network error — try a smaller/cropped image or check your connection."
+        : e.message || "Extraction failed";
+      toast({ title: "Extraction failed", description: msg, variant: "destructive" });
     } finally {
       setAttLoading(false);
     }
