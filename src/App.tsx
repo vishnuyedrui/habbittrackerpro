@@ -8,6 +8,7 @@ import { Footer } from "./components/Footer";
 import { ThemeProvider } from "./components/ThemeProvider";
 import GradeCalculator from "./pages/GradeCalculator";
 import Index from "./pages/Index";
+import Results from "./pages/Results";
 import NotFound from "./pages/NotFound";
 import { ExternalPage } from "./components/ExternalPage";
 import { FloatingCoffee } from "./components/FloatingCoffee";
@@ -24,6 +25,7 @@ const App = () => (
           <Navbar />
           <Routes>
             <Route path="/" element={<GradeCalculator />} />
+            <Route path="/results" element={<Results />} />
             <Route path="/habits" element={<Index />} />
             <Route path="/external/feedback" element={<ExternalPage url="https://docs.google.com/forms/d/e/1FAIpQLSffSEUgxpJZ4i14s1E0cFQmheKTlS6uKGajijuL3YMBUY4txg/viewform?usp=publish-editor" />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
