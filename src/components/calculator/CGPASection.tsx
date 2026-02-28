@@ -7,6 +7,7 @@ import { TrendingUp, Calculator, ArrowRight, Download, Share2 } from "lucide-rea
 import { useState, useEffect, useRef, useMemo } from "react";
 import confetti from "canvas-confetti";
 import { generateGradeCard } from "@/lib/gradecard-generator";
+import { SavePromptDialog } from "./SavePromptDialog";
 
 interface CGPASectionProps {
   currentSGPA: number;
@@ -19,6 +20,7 @@ export function CGPASection({ currentSGPA, currentCredits, courses, onCGPACalcul
   const [previousCGPA, setPreviousCGPA] = useState<string>('');
   const [previousCredits, setPreviousCredits] = useState<string>('');
   const [showResult, setShowResult] = useState(false);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
   const hasTriggeredConfetti = useRef(false);
 
   const canCalculate = previousCGPA !== '' && previousCredits !== '' && 
@@ -33,6 +35,7 @@ export function CGPASection({ currentSGPA, currentCredits, courses, onCGPACalcul
   useEffect(() => {
     if (showResult && result && !hasTriggeredConfetti.current) {
       hasTriggeredConfetti.current = true;
+      setShowSavePrompt(true);
       const colors = ['#FF8C42', '#FFE66D', '#FF6B9D', '#4ECDC4', '#A855F7', '#10B981'];
       confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors });
       setTimeout(() => {
@@ -218,6 +221,15 @@ export function CGPASection({ currentSGPA, currentCredits, courses, onCGPACalcul
             </div>
           </div>
         )}
+
+        <SavePromptDialog
+          open={showSavePrompt}
+          onClose={() => setShowSavePrompt(false)}
+          type="cgpa"
+          courses={courses}
+          showCGPA={true}
+          cgpaData={showResult && result ? { cgpa: result.cgpa, previousCGPA: parseFloat(previousCGPA), previousCredits: parseInt(previousCredits), newTotalCredits: result.totalCredits } : null}
+        />
       </CardContent>
     </Card>
   );

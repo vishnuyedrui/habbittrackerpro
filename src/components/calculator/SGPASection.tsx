@@ -6,6 +6,7 @@ import { generateGradeCard } from "@/lib/gradecard-generator";
 import { useState, useEffect, useRef } from "react";
 import { GradeBadge } from "./GradeBadge";
 import confetti from "canvas-confetti";
+import { SavePromptDialog } from "./SavePromptDialog";
 
 interface SGPASectionProps {
   courses: Course[];
@@ -20,6 +21,7 @@ interface SGPASectionProps {
 
 export function SGPASection({ courses, onShowCGPA, cgpaData }: SGPASectionProps) {
   const [showResult, setShowResult] = useState(false);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
   const hasTriggeredConfetti = useRef(false);
   
   const validCourses = courses.filter(c => c.finalGradePoint !== null && c.name.trim() !== '');
@@ -29,6 +31,7 @@ export function SGPASection({ courses, onShowCGPA, cgpaData }: SGPASectionProps)
   useEffect(() => {
     if (showResult && result && !hasTriggeredConfetti.current) {
       hasTriggeredConfetti.current = true;
+      setShowSavePrompt(true);
       const colors = ['#FF6B9D', '#FFE66D', '#4ECDC4', '#A855F7', '#FF8C42', '#10B981'];
       
       if (result.sgpa >= 9) {
@@ -227,6 +230,16 @@ export function SGPASection({ courses, onShowCGPA, cgpaData }: SGPASectionProps)
             </div>
           </div>
         )}
+
+        <SavePromptDialog
+          open={showSavePrompt}
+          onClose={() => setShowSavePrompt(false)}
+          type="sgpa"
+          courses={courses}
+          showCGPA={false}
+          cgpaData={cgpaData}
+          onShowCGPA={onShowCGPA}
+        />
       </CardContent>
     </Card>
   );
