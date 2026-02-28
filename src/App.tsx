@@ -14,7 +14,7 @@ import Install from "./pages/Install";
 import { ExternalPage } from "./components/ExternalPage";
 import { FloatingCoffee } from "./components/FloatingCoffee";
 import { CoffeePopup } from "./components/CoffeePopup";
-
+import { InstallBanner } from "./components/InstallBanner";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -37,6 +37,7 @@ const App = () => (
           <Footer />
           <FloatingCoffee />
           <CoffeePopup />
+          <InstallBanner />
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
