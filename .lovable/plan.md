@@ -1,42 +1,43 @@
 
-# Auto-Prompt Save After SGPA and CGPA Calculation
+Goal: fix the roll-number save failure so SGPA/CGPA cards save reliably from both the popup and Save/Load panel.
 
-## Overview
-After the user calculates their SGPA or CGPA, a popup dialog will appear offering them three options: save the grade card via roll number, continue to calculate CGPA (after SGPA only), or dismiss with "Maybe Later."
+What I found:
+1. The app saves with:
+   - `upsert(..., { onConflict: "roll_number" })`
+   - in both `SavePromptDialog.tsx` and `RollNumberSave.tsx`.
+2. The database currently has a unique index on `UPPER(roll_number)` (expression index), not on plain `roll_number`.
+3. `on_conflict=roll_number` requires a real unique constraint/index on that exact column. With the current expression index, upsert conflict targeting does not match, so save fails.
+4. RLS policies are already permissive in the backend, so this is not an RLS blockage now.
 
-## Changes
+Implementation plan:
 
-### 1. Create `src/components/calculator/SavePromptDialog.tsx`
-A new dialog component that appears after calculation with these options:
-- **Save via Roll Number** -- opens an inline roll number input + save button (reuses the existing save logic from `RollNumberSave`)
-- **Calculate CGPA** -- only shown after SGPA calculation (not after CGPA), calls `onShowCGPA`
-- **Maybe Later** -- dismisses the dialog
+1) Fix database uniqueness to match app upsert behavior
+- Add a migration that:
+  - normalizes existing values to uppercase (`UPDATE ... SET roll_number = UPPER(TRIM(roll_number))`),
+  - safely removes duplicates if any exist after normalization (keep latest `updated_at`),
+  - drops the expression index `idx_saved_grade_cards_roll`,
+  - creates a plain unique index (or unique constraint) on `roll_number`.
+- Keep current RLS policies as-is (public save/load is intended for this feature).
 
-The dialog will use Radix `Dialog` component (already available in UI library) with the existing pop styling. It will accept props:
-- `open` / `onClose`
-- `type`: `"sgpa"` | `"cgpa"` -- controls whether "Calculate CGPA" option is shown
-- `courses`, `showCGPA`, `cgpaData` -- for saving
-- `onShowCGPA` -- callback for the CGPA option
+2) Make frontend save payloads consistently normalized
+- In `SavePromptDialog.tsx`, normalize roll number before validation and save using the same approach as `RollNumberSave.tsx` (`trim().toUpperCase()`).
+- Keep regex validation 5–20 alphanumeric, but validate against normalized value to avoid whitespace edge cases.
 
-Save logic: inline roll number input with validation (same 5-20 alphanumeric pattern), upsert to `saved_grade_cards` table.
+3) Improve error visibility (so users see the actual reason if backend rejects save)
+- In both `SavePromptDialog.tsx` and `RollNumberSave.tsx`, surface backend message in toast when available (instead of generic “Failed to save” only).
+- This helps future debugging without needing repeated guesswork.
 
-### 2. Update `src/components/calculator/SGPASection.tsx`
-- Add state `showSavePrompt` that gets set to `true` when SGPA result is first shown (alongside the confetti trigger)
-- Render `<SavePromptDialog type="sgpa" />` with `onShowCGPA` passed through
-- When user clicks "Calculate CGPA" in the dialog, it closes the dialog and calls `onShowCGPA`
+4) Verify both save entry points end-to-end
+- Test from SGPA popup:
+  - calculate SGPA → popup appears → save with roll number.
+- Test from CGPA popup:
+  - calculate CGPA → popup appears → save with roll number.
+- Test from top-right Save/Load panel:
+  - save then load same roll number.
+- Confirm overwrite behavior works (same roll number updates existing record).
+- Confirm invalid roll numbers are blocked as before.
 
-### 3. Update `src/components/calculator/CGPASection.tsx`
-- Add state `showSavePrompt` that gets set to `true` when CGPA result is first shown (alongside the confetti trigger)
-- Render `<SavePromptDialog type="cgpa" />` (no "Calculate CGPA" option since they already did)
-
-### 4. Pass necessary props
-- `SGPASection` already receives `courses`, `onShowCGPA`, and `cgpaData` -- sufficient
-- `CGPASection` already receives `courses` -- will pass `showCGPA` and `cgpaData` through the dialog
-
-## Technical Details
-- Reuses existing `supabase` client and `saved_grade_cards` table (no DB changes needed)
-- Dialog uses `Dialog` from `@/components/ui/dialog`
-- Roll number validation: `/^[A-Z0-9]{5,20}$/`
-- Save uses `upsert` with `onConflict: "roll_number"`
-- Toast notifications via `sonner` for success/error feedback
-- Dialog styled with the existing pop design system (rounded corners, pop colors, font-display)
+Technical notes:
+- This fix aligns backend indexing with current API contract (`onConflict: "roll_number"`), which is the cleanest and most reliable approach.
+- No auth model changes are required for this grade-card save feature.
+- No changes needed in generated integration files.
