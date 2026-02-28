@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Course,
   Assessment,
@@ -340,8 +341,23 @@ export function CourseCard({
                     course.hasLab ? "text-pop-cyan" : "text-muted-foreground"
                   )}
                 >
-                  <FlaskConical className="w-3.5 h-3.5" />
-                  {course.hasLab ? "Lab Enabled" : "Has Lab?"}
+                  <motion.span
+                    animate={course.hasLab ? { rotate: [0, -15, 15, -10, 0], scale: [1, 1.3, 1] } : { rotate: 0, scale: 1 }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                  >
+                    <FlaskConical className="w-3.5 h-3.5" />
+                  </motion.span>
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={course.hasLab ? "on" : "off"}
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {course.hasLab ? "Lab Enabled" : "Has Lab?"}
+                    </motion.span>
+                  </AnimatePresence>
                 </Label>
               </div>
             )}
