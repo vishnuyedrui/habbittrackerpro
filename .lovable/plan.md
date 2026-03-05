@@ -1,100 +1,99 @@
 
 
-## Plan: Add 6 Features to GradeGuru
+## Plan: Add Voice Input to Grade Calculator
 
-### Overview
-Add skeleton screens, command palette, interactive charts, AI feedback, enhanced toasts, and error boundaries — all matching the existing dark theme with pop colors, Tailwind, shadcn/ui, and Recharts.
+### Understanding the Input System
 
-### 1. Skeleton Screens
+The grade calculator has these input types:
+1. **Grade select dropdowns** (Sessional 1, Sessional 2, Learning Engagement) — these are `<select>` elements with options like O, A+, A, B+, B, C, P, I, Ab/R
+2. **Numeric inputs**: Course name (text), Credits (number), Marks (number, 0-100), Lab marks (number, 0-100), Absolute marks (number), Max marks (number)
+3. **CGPA inputs**: Previous CGPA (number, 0-10), Previous Credits (number)
+4. **CLAD grade select**: Another dropdown for CLAD courses
 
-The app already uses the shadcn `Skeleton` component in Learn pages. We'll enhance it with shimmer animation and add skeletons where missing.
+Voice input makes most sense on the **select dropdowns** (speak "A plus" to select A+) and **numeric inputs** (speak "eighty five" to enter 85).
 
-**Changes:**
-- **`src/index.css`** — Add shimmer keyframe and `.skeleton-shimmer` utility with dark mode support
-- **`src/pages/GitamResults.tsx`** — Replace `<Loader2>` spinner during search with skeleton rows matching the results table layout (student banner skeleton + table row skeletons)
-- **`src/pages/Index.tsx`** — Add loading state for initial habit data fetch; show skeleton table rows and stat card skeletons while data loads
-- **`src/pages/GradeCalculator.tsx`** — This page is purely client-side (no fetch), so no skeleton needed; it renders instantly
-- **Learn pages** already have skeletons — enhance them with shimmer animation class
+### New Files
 
-### 2. Command Palette (Cmd+K)
+**`src/hooks/use-voice-input.ts`** — Custom hook wrapping Web Speech API
+- Singleton SpeechRecognition instance (only one active at a time)
+- States: idle, listening, success, error
+- Word-to-number parser (handles "eighty five", "seventy five point five", etc.)
+- Grade label parser (handles "A plus" → "A+", "B plus" → "B+", "O" → "O", etc.)
+- Auto-stop after 5s silence
+- Browser support detection (`window.SpeechRecognition || window.webkitSpeechRecognition`)
+- Returns `{ isListening, startListening, status, isSupported }`
 
-**New file: `src/components/CommandPalette.tsx`**
-- Uses existing `cmdk` + shadcn `Command` component (already installed)
-- Global `useEffect` listener for Cmd+K / Ctrl+K
-- Navigation items: Grade Calculator, Habit Tracker, Learn, Feedback, GITAM Results
-- Quick actions: Toggle theme, Add course, Add habit
-- Mounted in `App.tsx` at root level
-- Styled to match the existing dark theme
+**`src/components/calculator/VoiceMicButton.tsx`** — Reusable mic button component
+- Props: `onResult(value: string)`, `type: 'number' | 'grade'`, `min?`, `max?`
+- Grey mic icon default → Red pulsing when listening → Green check on success → Red X on error
+- "Listening..." text shown below input when active
+- Tooltip: "Click to speak your grade"
+- Pulsing ripple animation via Tailwind keyframes
+- Hidden entirely if browser doesn't support Web Speech API
 
-**`src/App.tsx`** — Import and render `<CommandPalette />`
+**`src/components/calculator/VoiceModeBar.tsx`** — Global voice mode toggle
+- Toggle button at top of grade calculator: "Voice Mode 🎤"
+- When ON: banner "Voice Mode Active — Say your subject and grade 🎤"
+- Cycles through inputs sequentially, highlights current field with glow
+- Parses compound speech like "Math 85, Science 90"
+- Auto-triggers calculation when all fields filled
 
-### 3. Interactive Grade Charts
+### Modified Files
 
-**New file: `src/components/calculator/InteractiveCharts.tsx`**
-- 3 charts using Recharts (already installed): Bar (credits per grade), Line (grade points across courses), Pie/Donut (grade letter distribution)
-- Takes `courses` array as prop, computes chart data from it
-- Shows skeleton rectangles when no valid course data exists yet
-- Responsive grid: 1 col mobile, 3 col desktop
-- Uses existing Card styling
+**`src/index.css`** — Add voice-related keyframes
+- `@keyframes voice-pulse` for the red pulsing ripple effect
+- `@keyframes voice-success` for the green flash on input fields
+- `.voice-active-glow` class for highlighting current field in voice mode
 
-**`src/pages/GradeCalculator.tsx`** — Add `<InteractiveCharts courses={courses} />` below the CGPA section
+**`src/components/calculator/CourseCard.tsx`** — Add mic buttons
+- Import `VoiceMicButton`
+- Add mic button next to each grade `<select>` dropdown (Sessional 1, 2, LE)
+- Add mic button next to marks inputs, lab marks input, absolute marks inputs
+- Add mic button next to course name and credits inputs
+- On voice result: call existing `updateAssessmentGrade()` / `updateAssessmentMarks()` / `onUpdate()` handlers
+- No layout changes — mic button sits inline or absolutely positioned
 
-### 4. AI Feedback Generator
+**`src/components/calculator/CGPASection.tsx`** — Add mic buttons
+- Add mic button next to Previous CGPA and Previous Credits inputs
 
-This feature is designed for "student grade view" — in this app, the closest equivalent is the GitamResults page where individual student results are displayed.
+**`src/pages/GradeCalculator.tsx`** — Add VoiceModeBar
+- Import and render `<VoiceModeBar />` between the header and step indicator
+- Pass courses + setCourses for sequential voice filling
 
-**New file: `src/components/AiFeedbackModal.tsx`**
-- Dialog with "Generate Feedback" trigger button
-- Calls a Lovable AI edge function with student name + grades
-- Shows shimmer skeleton while generating
-- Editable textarea for result, Copy + Save buttons
-- Uses existing shadcn Dialog
+### Animation Details (in `src/index.css`)
 
-**New edge function: `supabase/functions/ai-feedback/index.ts`**
-- Accepts student data, calls Lovable AI gateway
-- Returns generated feedback text
+```css
+@keyframes voice-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
 
-**`src/pages/GitamResults.tsx`** — Add "Generate Feedback ✨" button in the ResultsView student banner
+@keyframes voice-success-flash {
+  0% { background-color: inherit; }
+  50% { background-color: rgba(16, 185, 129, 0.2); }
+  100% { background-color: inherit; }
+}
+```
 
-### 5. Toast Notifications
+### Voice Parsing Logic (in hook)
 
-Sonner is already installed and `<Toaster />` (sonner) is already in `App.tsx`. The app already uses `toast` from `@/hooks/use-toast` in several places.
-
-**Changes:**
-- **`src/pages/GitamResults.tsx`** — Add toast on successful results/attendance fetch, and on error
-- **`src/pages/admin/*`** — Add toasts on CRUD operations (branches, subjects, modules, topics, videos) where missing
-- **`src/pages/Index.tsx`** — Already has toasts; verify coverage for save/delete habit actions
-- Audit all pages for missing feedback on user actions
-
-### 6. Error Boundary
-
-**New file: `src/components/ErrorBoundary.tsx`**
-- Class component catching render errors
-- Friendly fallback UI with icon, "Something went wrong" message, "Try Again" button
-- Matches existing card/button styles
-
-**New file: `src/components/BugReportButton.tsx`**
-- Fixed bottom-left floating ⚠️ icon button
-- Opens a lightweight modal to type a bug report
-- Logs to console + shows success toast
-
-**`src/App.tsx`** — Wrap each Route's element with `<ErrorBoundary>`; add `<BugReportButton />` at root
+- Numbers: "zero" through "one hundred", decimals ("point five" → .5)
+- Grades: "O" → O, "A plus" → A+, "A" → A, "B plus" → B+, "B" → B, "C" → C, "P" → P
+- Validation: numbers clamped to min/max, show error toast if out of range
+- Toast notifications via sonner for all states (success, error, permission denied)
 
 ### File Summary
 
 | Action | File |
 |--------|------|
-| Create | `src/components/CommandPalette.tsx` |
-| Create | `src/components/calculator/InteractiveCharts.tsx` |
-| Create | `src/components/AiFeedbackModal.tsx` |
-| Create | `src/components/ErrorBoundary.tsx` |
-| Create | `src/components/BugReportButton.tsx` |
-| Create | `supabase/functions/ai-feedback/index.ts` |
-| Edit | `src/index.css` (shimmer animation) |
-| Edit | `src/App.tsx` (command palette, error boundary, bug report) |
-| Edit | `src/pages/GradeCalculator.tsx` (interactive charts) |
-| Edit | `src/pages/GitamResults.tsx` (skeletons, AI feedback button, toasts) |
-| Edit | `src/pages/Index.tsx` (loading skeletons) |
-| Edit | Learn pages (shimmer class on existing skeletons) |
-| Migration | None needed |
+| Create | `src/hooks/use-voice-input.ts` |
+| Create | `src/components/calculator/VoiceMicButton.tsx` |
+| Create | `src/components/calculator/VoiceModeBar.tsx` |
+| Edit | `src/index.css` (voice animations) |
+| Edit | `src/components/calculator/CourseCard.tsx` (mic buttons) |
+| Edit | `src/components/calculator/CGPASection.tsx` (mic buttons) |
+| Edit | `src/pages/GradeCalculator.tsx` (voice mode bar) |
+
+No new dependencies needed — Web Speech API is built into browsers.
 
