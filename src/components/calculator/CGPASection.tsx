@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TrendingUp, Calculator, ArrowRight, Download } from "lucide-react";
+import { VoiceMicButton } from "./VoiceMicButton";
 import { useState, useEffect, useRef, useMemo } from "react";
 import confetti from "canvas-confetti";
 import { generateGradeCard } from "@/lib/gradecard-generator";
@@ -75,31 +76,37 @@ export function CGPASection({ currentSGPA, currentCredits, courses, onCGPACalcul
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
           <div className="space-y-2">
             <Label htmlFor="prev-cgpa" className="text-sm font-bold font-display">Previous CGPA</Label>
-            <Input
-              id="prev-cgpa"
-              aria-label="Enter your previous CGPA"
-              type="number"
-              step={0.01}
-              min={0}
-              max={10}
-              placeholder="e.g., 8.5"
-              value={previousCGPA}
-              onChange={(e) => { setPreviousCGPA(e.target.value); setShowResult(false); }}
-              className="bg-card rounded-2xl border-2 border-foreground/10 focus:border-pop-orange h-12"
-            />
+            <div className="flex items-center gap-1.5">
+              <Input
+                id="prev-cgpa"
+                aria-label="Enter your previous CGPA"
+                type="number"
+                step={0.01}
+                min={0}
+                max={10}
+                placeholder="e.g., 8.5"
+                value={previousCGPA}
+                onChange={(e) => { setPreviousCGPA(e.target.value); setShowResult(false); }}
+                className="bg-card rounded-2xl border-2 border-foreground/10 focus:border-pop-orange h-12"
+              />
+              <VoiceMicButton type="number" min={0} max={10} onResult={(val) => { setPreviousCGPA(val); setShowResult(false); }} />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="prev-credits" className="text-sm font-bold font-display">Previous Total Credits</Label>
-            <Input
-              id="prev-credits"
-              aria-label="Enter your previous total credits"
-              type="number"
-              min={1}
-              placeholder="e.g., 120"
-              value={previousCredits}
-              onChange={(e) => { setPreviousCredits(e.target.value); setShowResult(false); }}
-              className="bg-card rounded-2xl border-2 border-foreground/10 focus:border-pop-orange h-12"
-            />
+            <div className="flex items-center gap-1.5">
+              <Input
+                id="prev-credits"
+                aria-label="Enter your previous total credits"
+                type="number"
+                min={1}
+                placeholder="e.g., 120"
+                value={previousCredits}
+                onChange={(e) => { setPreviousCredits(e.target.value); setShowResult(false); }}
+                className="bg-card rounded-2xl border-2 border-foreground/10 focus:border-pop-orange h-12"
+              />
+              <VoiceMicButton type="number" min={1} max={500} onResult={(val) => { setPreviousCredits(val); setShowResult(false); }} />
+            </div>
           </div>
         </div>
 

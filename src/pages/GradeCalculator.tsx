@@ -7,6 +7,7 @@ import { SGPASection } from "@/components/calculator/SGPASection";
 import { CGPASection } from "@/components/calculator/CGPASection";
 import { GradeChart } from "@/components/calculator/GradeChart";
 import { InteractiveCharts } from "@/components/calculator/InteractiveCharts";
+import { VoiceModeBar } from "@/components/calculator/VoiceModeBar";
 import { Button } from "@/components/ui/button";
 import { Plus, GraduationCap, Sparkles, RotateCcw } from "lucide-react";
 import { usePersistedGrades } from "@/hooks/use-persisted-grades";
@@ -84,6 +85,15 @@ export default function GradeCalculator() {
           <p className="text-muted-foreground text-xs sm:text-base font-medium max-w-lg mx-auto">
             Calculate your WGP, SGPA, and CGPA with step-by-step breakdowns ✨
           </p>
+        </motion.div>
+
+        {/* Voice Mode Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12, duration: 0.5 }}
+        >
+          <VoiceModeBar />
         </motion.div>
 
         {/* Step Indicator */}
