@@ -23,6 +23,7 @@ import { Trash2, BookOpen, Lock, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GradeBadge } from "./GradeBadge";
 import { WGPFormula } from "./WGPFormula";
+import { VoiceMicButton } from "./VoiceMicButton";
 
 const SESSIONAL_GRADE_OPTIONS = [
   { label: "O", value: 10 },
@@ -314,13 +315,16 @@ export function CourseCard({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-2">
             <Label htmlFor={`courseName-${course.id}`} className="font-bold text-sm font-display">Course Name</Label>
-            <Input
-              id={`courseName-${course.id}`}
-              value={course.name}
-              onChange={(e) => onUpdate({ ...course, name: e.target.value })}
-              placeholder="e.g. Mathematics"
-              className="bg-card rounded-2xl border-2 border-foreground/10 h-11 font-medium focus:border-primary transition-all"
-            />
+            <div className="flex items-center gap-1.5">
+              <Input
+                id={`courseName-${course.id}`}
+                value={course.name}
+                onChange={(e) => onUpdate({ ...course, name: e.target.value })}
+                placeholder="e.g. Mathematics"
+                className="bg-card rounded-2xl border-2 border-foreground/10 h-11 font-medium focus:border-primary transition-all"
+              />
+              <VoiceMicButton type="text" onResult={(val) => onUpdate({ ...course, name: val })} />
+            </div>
             {isCLAD && (
               <p className="text-xs text-muted-foreground bg-pop-yellow/20 px-3 py-1.5 rounded-full inline-block font-medium">
                 ✨ CLAD course: Credits = 1
@@ -364,16 +368,19 @@ export function CourseCard({
           </div>
           <div className="space-y-2">
             <Label htmlFor={`credits-${course.id}`} className="font-bold text-sm font-display">Credits</Label>
-            <Input
-              id={`credits-${course.id}`}
-              type="number"
-              min={1}
-              max={10}
-              value={isCLAD ? 1 : course.credits}
-              disabled={isCLAD}
-              onChange={(e) => onUpdate({ ...course, credits: parseInt(e.target.value) })}
-              className="bg-card rounded-2xl border-2 border-foreground/10 h-11 font-medium"
-            />
+            <div className="flex items-center gap-1.5">
+              <Input
+                id={`credits-${course.id}`}
+                type="number"
+                min={1}
+                max={10}
+                value={isCLAD ? 1 : course.credits}
+                disabled={isCLAD}
+                onChange={(e) => onUpdate({ ...course, credits: parseInt(e.target.value) })}
+                className="bg-card rounded-2xl border-2 border-foreground/10 h-11 font-medium"
+              />
+              {!isCLAD && <VoiceMicButton type="number" min={1} max={10} onResult={(val) => onUpdate({ ...course, credits: parseInt(val) })} />}
+            </div>
           </div>
         </div>
 
@@ -516,31 +523,38 @@ export function CourseCard({
         {isCLAD && (
           <div className="space-y-2">
             <Label htmlFor={`cladGrade-${course.id}`} className="font-display font-bold">Final Grade</Label>
-            <select
-              id={`cladGrade-${course.id}`}
-              aria-label="Select CLAD grade"
-              className="w-full rounded-2xl border-2 border-foreground/10 bg-card px-3 py-2.5 text-center font-bold transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
-              value={course.letterGrade ?? ""}
-              onChange={(e) => {
-                const selected = CLAD_GRADE_OPTIONS.find(g => g.label === e.target.value);
+            <div className="flex items-center gap-1.5">
+              <select
+                id={`cladGrade-${course.id}`}
+                aria-label="Select CLAD grade"
+                className="w-full rounded-2xl border-2 border-foreground/10 bg-card px-3 py-2.5 text-center font-bold transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                value={course.letterGrade ?? ""}
+                onChange={(e) => {
+                  const selected = CLAD_GRADE_OPTIONS.find(g => g.label === e.target.value);
+                  if (!selected) return;
+                  onUpdate({
+                    ...course,
+                    credits: 1,
+                    wgp: selected.value,
+                    finalGradePoint: selected.value,
+                    letterGrade: selected.label,
+                    assessments: [],
+                    hasLab: false,
+                    labMarks: null,
+                  });
+                }}
+              >
+                <option value="">Select Grade</option>
+                {CLAD_GRADE_OPTIONS.map((g) => (
+                  <option key={g.label} value={g.label}>{g.label}</option>
+                ))}
+              </select>
+              <VoiceMicButton type="grade" onResult={(val) => {
+                const selected = CLAD_GRADE_OPTIONS.find(g => g.label === val);
                 if (!selected) return;
-                onUpdate({
-                  ...course,
-                  credits: 1,
-                  wgp: selected.value,
-                  finalGradePoint: selected.value,
-                  letterGrade: selected.label,
-                  assessments: [],
-                  hasLab: false,
-                  labMarks: null,
-                });
-              }}
-            >
-              <option value="">Select Grade</option>
-              {CLAD_GRADE_OPTIONS.map((g) => (
-                <option key={g.label} value={g.label}>{g.label}</option>
-              ))}
-            </select>
+                onUpdate({ ...course, credits: 1, wgp: selected.value, finalGradePoint: selected.value, letterGrade: selected.label, assessments: [], hasLab: false, labMarks: null });
+              }} />
+            </div>
           </div>
         )}
 
@@ -576,34 +590,40 @@ export function CourseCard({
                         </td>
                         <td className="p-4">
                           <div className="space-y-2">
-                            <select
-                              id={`grade-${course.id}-${i}`}
-                              aria-label={`Select grade for ${assessment.name}`}
-                              className="w-full rounded-xl border-2 border-foreground/10 bg-background px-3 py-2 text-center font-bold transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                              value={assessment.gradeLabel ?? ""}
-                              onChange={(e) => updateAssessmentGrade(i, e.target.value)}
-                            >
-                              <option value="">Select</option>
-                              {gradeOptions.map((g) => (
-                                <option key={g.label} value={g.label}>{g.label}</option>
-                              ))}
-                            </select>
+                            <div className="flex items-center gap-1.5">
+                              <select
+                                id={`grade-${course.id}-${i}`}
+                                aria-label={`Select grade for ${assessment.name}`}
+                                className="w-full rounded-xl border-2 border-foreground/10 bg-background px-3 py-2 text-center font-bold transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                value={assessment.gradeLabel ?? ""}
+                                onChange={(e) => updateAssessmentGrade(i, e.target.value)}
+                              >
+                                <option value="">Select</option>
+                                {gradeOptions.map((g) => (
+                                  <option key={g.label} value={g.label}>{g.label}</option>
+                                ))}
+                              </select>
+                              <VoiceMicButton type="grade" onResult={(val) => updateAssessmentGrade(i, val)} />
+                            </div>
                             {showMarksInput && (
                               <div className="space-y-1">
-                                <Input
-                                  id={`marks-${course.id}-${i}`}
-                                  aria-label={`Enter marks for ${assessment.name}`}
-                                  type="number"
-                                  min={0}
-                                  max={100}
-                                  placeholder="Marks (0-100) *"
-                                  value={assessment.marks ?? ""}
-                                  onChange={(e) => updateAssessmentMarks(i, e.target.value)}
-                                  className={cn(
-                                    "w-full text-center bg-background text-sm rounded-xl border-2 font-medium",
-                                    assessment.marks === null ? "border-pop-orange" : "border-foreground/10"
-                                  )}
-                                />
+                                <div className="flex items-center gap-1.5">
+                                  <Input
+                                    id={`marks-${course.id}-${i}`}
+                                    aria-label={`Enter marks for ${assessment.name}`}
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    placeholder="Marks (0-100) *"
+                                    value={assessment.marks ?? ""}
+                                    onChange={(e) => updateAssessmentMarks(i, e.target.value)}
+                                    className={cn(
+                                      "w-full text-center bg-background text-sm rounded-xl border-2 font-medium",
+                                      assessment.marks === null ? "border-pop-orange" : "border-foreground/10"
+                                    )}
+                                  />
+                                  <VoiceMicButton type="number" min={0} max={100} onResult={(val) => updateAssessmentMarks(i, val)} />
+                                </div>
                                 {hasSpecialGrade && (
                                   <p className="text-xs text-muted-foreground text-center bg-muted/50 px-2 py-1 rounded-full">
                                     {assessment.gradeLabel}: GP based on total
@@ -644,18 +664,21 @@ export function CourseCard({
                         {(assessment.weight * 100).toFixed(0)}%
                       </div>
                     </div>
-                    <select
-                      id={`grade-mobile-${course.id}-${i}`}
-                      aria-label={`Select grade for ${assessment.name}`}
-                      className="w-full rounded-xl border-2 border-foreground/10 bg-background px-3 py-2.5 text-center font-bold text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                      value={assessment.gradeLabel ?? ""}
-                      onChange={(e) => updateAssessmentGrade(i, e.target.value)}
-                    >
-                      <option value="">Select Grade</option>
-                      {gradeOptions.map((g) => (
-                        <option key={g.label} value={g.label}>{g.label}</option>
-                      ))}
-                    </select>
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        id={`grade-mobile-${course.id}-${i}`}
+                        aria-label={`Select grade for ${assessment.name}`}
+                        className="w-full rounded-xl border-2 border-foreground/10 bg-background px-3 py-2.5 text-center font-bold text-base transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                        value={assessment.gradeLabel ?? ""}
+                        onChange={(e) => updateAssessmentGrade(i, e.target.value)}
+                      >
+                        <option value="">Select Grade</option>
+                        {gradeOptions.map((g) => (
+                          <option key={g.label} value={g.label}>{g.label}</option>
+                        ))}
+                      </select>
+                      <VoiceMicButton type="grade" onResult={(val) => updateAssessmentGrade(i, val)} />
+                    </div>
                     {showMarksInput && (
                       <div className="space-y-1.5">
                         <Input
@@ -716,25 +739,37 @@ export function CourseCard({
         {!isCLAD && course.hasLab && (
           <div className="space-y-2">
             <Label htmlFor={`labMarks-${course.id}`} className="font-bold font-display">🔬 Lab Marks (out of 100)</Label>
-            <Input
-              id={`labMarks-${course.id}`}
-              type="number"
-              min={0}
-              max={100}
-              placeholder="Enter lab marks"
-              value={course.labMarks ?? ""}
-              onChange={(e) => {
-                const labMarks = e.target.value === "" ? null : Math.min(100, Math.max(0, Number(e.target.value)));
-                if (course.wgp !== null && labMarks !== null) {
+            <div className="flex items-center gap-1.5">
+              <Input
+                id={`labMarks-${course.id}`}
+                type="number"
+                min={0}
+                max={100}
+                placeholder="Enter lab marks"
+                value={course.labMarks ?? ""}
+                onChange={(e) => {
+                  const labMarks = e.target.value === "" ? null : Math.min(100, Math.max(0, Number(e.target.value)));
+                  if (course.wgp !== null && labMarks !== null) {
+                    const finalGP = calculateFinalGradePointWithLab(course.wgp, labMarks);
+                    const grade = getGradeFromWGP(finalGP);
+                    onUpdate({ ...course, labMarks, finalGradePoint: finalGP, letterGrade: grade.letter });
+                  } else {
+                    onUpdate({ ...course, labMarks });
+                  }
+                }}
+                className="bg-card rounded-2xl border-2 border-foreground/10 h-11 font-medium"
+              />
+              <VoiceMicButton type="number" min={0} max={100} onResult={(val) => {
+                const labMarks = Math.min(100, Math.max(0, Number(val)));
+                if (course.wgp !== null) {
                   const finalGP = calculateFinalGradePointWithLab(course.wgp, labMarks);
                   const grade = getGradeFromWGP(finalGP);
                   onUpdate({ ...course, labMarks, finalGradePoint: finalGP, letterGrade: grade.letter });
                 } else {
                   onUpdate({ ...course, labMarks });
                 }
-              }}
-              className="bg-card rounded-2xl border-2 border-foreground/10 h-11 font-medium"
-            />
+              }} />
+            </div>
           </div>
         )}
 
