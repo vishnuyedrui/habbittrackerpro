@@ -28,7 +28,6 @@ import AdminModules from "./pages/admin/AdminModules";
 import AdminTopics from "./pages/admin/AdminTopics";
 import AdminVideos from "./pages/admin/AdminVideos";
 import GitamResults from "./pages/GitamResults";
-import WhatIfCalculator from "./pages/WhatIfCalculator";
 
 const queryClient = new QueryClient();
 
@@ -43,7 +42,6 @@ const App = () => (
           <Navbar />
           <Routes>
             <Route path="/" element={<ErrorBoundary><GradeCalculator /></ErrorBoundary>} />
-            <Route path="/what-if" element={<ErrorBoundary><WhatIfCalculator /></ErrorBoundary>} />
             <Route path="/habits" element={<ErrorBoundary><Index /></ErrorBoundary>} />
             <Route path="/learn" element={<ErrorBoundary><Learn /></ErrorBoundary>} />
             <Route path="/learn/:subjectId" element={<ErrorBoundary><LearnSubject /></ErrorBoundary>} />
