@@ -98,16 +98,23 @@ export default function WhatIfCalculator() {
     }
   }, []);
 
-  // Sync future semesters count
+  // Clamp futureCount when currentSemester changes
+  useEffect(() => {
+    const max = 8 - currentSemester;
+    if (futureCount > max) setFutureCount(Math.max(1, max));
+  }, [currentSemester]);
+
+  // Sync future semesters count and auto-label semester numbers
   useEffect(() => {
     setFutureSemesters(prev => {
-      if (prev.length === futureCount) return prev;
-      if (prev.length < futureCount) {
-        return [...prev, ...Array.from({ length: futureCount - prev.length }, (_, j) => ({ credits: 20, sgpa: 7.0, semNumber: prev.length + j + 1 }))];
-      }
-      return prev.slice(0, futureCount);
+      const updated = prev.length === futureCount ? [...prev]
+        : prev.length < futureCount
+          ? [...prev, ...Array.from({ length: futureCount - prev.length }, () => ({ credits: 20, sgpa: 7.0, semNumber: 1 }))]
+          : prev.slice(0, futureCount);
+      // Auto-assign semester numbers based on currentSemester
+      return updated.map((s, i) => ({ ...s, semNumber: currentSemester + i + 1 }));
     });
-  }, [futureCount]);
+  }, [futureCount, currentSemester]);
 
   const updateFutureSem = useCallback((index: number, field: keyof FutureSemester, value: number) => {
     setFutureSemesters(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s));
