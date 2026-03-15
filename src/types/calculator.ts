@@ -101,10 +101,12 @@ export function calculateCGPA(
   const totalGradePoints = previousGradePoints + currentGradePoints;
   const totalCredits = previousCredits + currentCredits;
 
+  const cgpa = totalCredits > 0 ? totalGradePoints / totalCredits : 0;
+
   return {
-    cgpa: totalGradePoints / totalCredits,
+    cgpa: Number.isFinite(cgpa) ? cgpa : 0,
     totalCredits,
-    totalGradePoints,
+    totalGradePoints: Number.isFinite(totalGradePoints) ? totalGradePoints : 0,
   };
 }
 

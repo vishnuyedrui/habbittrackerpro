@@ -58,7 +58,8 @@ function calcCGPA(currentCGPA: number, completedCredits: number, semesters: Futu
   const futureCredits = semesters.reduce((sum, s) => sum + s.credits, 0);
   const totalCredits = completedCredits + futureCredits;
   if (totalCredits === 0) return null;
-  return (totalCompletedPoints + futurePoints) / totalCredits;
+  const result = (totalCompletedPoints + futurePoints) / totalCredits;
+  return Number.isFinite(result) ? result : null;
 }
 
 function loadState(): SavedState | null {
