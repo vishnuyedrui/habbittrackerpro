@@ -47,8 +47,26 @@ function loadState(): SavedState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    const attended = Math.max(0, Math.floor(Number(parsed.attended) || 0));
+    const total = Math.max(0, Math.floor(Number(parsed.total) || 0));
+    return {
+      attended: Math.min(attended, total),
+      total,
+      dayActive: Array.isArray(parsed.dayActive) && parsed.dayActive.length === 6
+        ? parsed.dayActive.map((v: unknown) => Boolean(v))
+        : [...DEFAULT_DAY_ACTIVE],
+      dayClasses: Array.isArray(parsed.dayClasses) && parsed.dayClasses.length === 6
+        ? parsed.dayClasses.map((v: unknown) => Math.max(0, Math.min(12, Math.floor(Number(v) || 0))))
+        : [...DEFAULT_DAY_CLASSES],
+      endDate: typeof parsed.endDate === "string" && !isNaN(new Date(parsed.endDate).getTime())
+        ? parsed.endDate
+        : getDefaultEndDate(),
+      target: Math.min(100, Math.max(50, Math.floor(Number(parsed.target) || 75))),
+    };
   } catch {
+    localStorage.removeItem(STORAGE_KEY);
     return null;
   }
 }

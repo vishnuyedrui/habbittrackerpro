@@ -11,11 +11,17 @@ import { VoiceModeBar } from "@/components/calculator/VoiceModeBar";
 import { Button } from "@/components/ui/button";
 import { Plus, GraduationCap, Sparkles, RotateCcw } from "lucide-react";
 import { usePersistedGrades } from "@/hooks/use-persisted-grades";
+import { MAX_COURSES } from "@/lib/security";
+import { toast } from "sonner";
 
 export default function GradeCalculator() {
   const { courses, setCourses, showCGPA, setShowCGPA, cgpaData, setCGPAData } = usePersistedGrades();
 
   const addCourse = () => {
+    if (courses.length >= MAX_COURSES) {
+      toast.error(`Maximum ${MAX_COURSES} courses allowed`);
+      return;
+    }
     setCourses((prev) => [...prev, createNewCourse()]);
   };
 

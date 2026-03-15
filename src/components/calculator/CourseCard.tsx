@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, BookOpen, Lock, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sanitizeText, clampNumber } from "@/lib/security";
 import { GradeBadge } from "./GradeBadge";
 import { WGPFormula } from "./WGPFormula";
 import { VoiceMicButton } from "./VoiceMicButton";
@@ -319,11 +320,11 @@ export function CourseCard({
               <Input
                 id={`courseName-${course.id}`}
                 value={course.name}
-                onChange={(e) => onUpdate({ ...course, name: e.target.value })}
+                onChange={(e) => onUpdate({ ...course, name: sanitizeText(e.target.value, 100) })}
                 placeholder="e.g. Mathematics"
                 className="bg-card rounded-2xl border-2 border-foreground/10 h-11 font-medium focus:border-primary transition-all"
               />
-              <VoiceMicButton type="text" onResult={(val) => onUpdate({ ...course, name: val })} />
+              <VoiceMicButton type="text" onResult={(val) => onUpdate({ ...course, name: sanitizeText(val, 100) })} />
             </div>
             {isCLAD && (
               <p className="text-xs text-muted-foreground bg-pop-yellow/20 px-3 py-1.5 rounded-full inline-block font-medium">
@@ -376,10 +377,10 @@ export function CourseCard({
                 max={10}
                 value={isCLAD ? 1 : course.credits}
                 disabled={isCLAD}
-                onChange={(e) => onUpdate({ ...course, credits: parseInt(e.target.value) })}
+                onChange={(e) => onUpdate({ ...course, credits: clampNumber(parseInt(e.target.value) || 1, 1, 10) })}
                 className="bg-card rounded-2xl border-2 border-foreground/10 h-11 font-medium"
               />
-              {!isCLAD && <VoiceMicButton type="number" min={1} max={10} onResult={(val) => onUpdate({ ...course, credits: parseInt(val) })} />}
+              {!isCLAD && <VoiceMicButton type="number" min={1} max={10} onResult={(val) => onUpdate({ ...course, credits: clampNumber(parseInt(val) || 1, 1, 10) })} />}
             </div>
           </div>
         </div>

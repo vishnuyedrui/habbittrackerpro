@@ -42,7 +42,8 @@ export function calculateWGP(assessments: Assessment[]): number | null {
   if (assessments.length === 0) return null;
   if (assessments.some((a) => a.gradePoint === null)) return null;
 
-  return assessments.reduce((sum, a) => sum + a.gradePoint! * a.weight, 0);
+  const result = assessments.reduce((sum, a) => sum + a.gradePoint! * a.weight, 0);
+  return Number.isFinite(result) ? result : null;
 }
 
 // Get letter grade from WGP value
@@ -78,8 +79,11 @@ export function calculateSGPA(courses: Course[]): { sgpa: number; totalCredits: 
 
   if (totalCredits === 0) return null;
 
+  const sgpa = totalGradePoints / totalCredits;
+  if (!Number.isFinite(sgpa)) return null;
+
   return {
-    sgpa: totalGradePoints / totalCredits,
+    sgpa,
     totalCredits,
     totalGradePoints,
   };
@@ -97,10 +101,12 @@ export function calculateCGPA(
   const totalGradePoints = previousGradePoints + currentGradePoints;
   const totalCredits = previousCredits + currentCredits;
 
+  const cgpa = totalCredits > 0 ? totalGradePoints / totalCredits : 0;
+
   return {
-    cgpa: totalGradePoints / totalCredits,
+    cgpa: Number.isFinite(cgpa) ? cgpa : 0,
     totalCredits,
-    totalGradePoints,
+    totalGradePoints: Number.isFinite(totalGradePoints) ? totalGradePoints : 0,
   };
 }
 
