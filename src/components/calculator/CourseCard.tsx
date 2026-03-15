@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, BookOpen, Lock, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sanitizeText, clampNumber } from "@/lib/security";
 import { GradeBadge } from "./GradeBadge";
 import { WGPFormula } from "./WGPFormula";
 import { VoiceMicButton } from "./VoiceMicButton";
