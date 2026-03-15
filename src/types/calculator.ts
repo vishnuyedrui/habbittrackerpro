@@ -42,7 +42,8 @@ export function calculateWGP(assessments: Assessment[]): number | null {
   if (assessments.length === 0) return null;
   if (assessments.some((a) => a.gradePoint === null)) return null;
 
-  return assessments.reduce((sum, a) => sum + a.gradePoint! * a.weight, 0);
+  const result = assessments.reduce((sum, a) => sum + a.gradePoint! * a.weight, 0);
+  return Number.isFinite(result) ? result : null;
 }
 
 // Get letter grade from WGP value
