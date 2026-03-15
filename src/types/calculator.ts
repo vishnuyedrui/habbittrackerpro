@@ -79,8 +79,11 @@ export function calculateSGPA(courses: Course[]): { sgpa: number; totalCredits: 
 
   if (totalCredits === 0) return null;
 
+  const sgpa = totalGradePoints / totalCredits;
+  if (!Number.isFinite(sgpa)) return null;
+
   return {
-    sgpa: totalGradePoints / totalCredits,
+    sgpa,
     totalCredits,
     totalGradePoints,
   };
