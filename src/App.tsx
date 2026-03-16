@@ -9,6 +9,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { CommandPalette } from "./components/CommandPalette";
 import { BugReportButton } from "./components/BugReportButton";
+import { MathPuzzleLock } from "./components/MathPuzzleLock";
 import GradeCalculator from "./pages/GradeCalculator";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -37,6 +38,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <TooltipProvider>
+        <MathPuzzleLock>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -69,6 +71,7 @@ const App = () => (
           <CoffeePopup />
           <BugReportButton />
         </BrowserRouter>
+        </MathPuzzleLock>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
