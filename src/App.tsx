@@ -71,6 +71,7 @@ const App = () => (
           <CoffeePopup />
           <BugReportButton />
         </BrowserRouter>
+        </MathPuzzleLock>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
