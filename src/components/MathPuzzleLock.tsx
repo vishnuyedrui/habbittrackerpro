@@ -390,7 +390,7 @@ function LockOverlay({ onUnlock }: { onUnlock: () => void }) {
       {/* Meme popup */}
       {showMeme && <MemePopup memeIndex={currentMemeIdx} onDismiss={() => setShowMeme(false)} />}
 
-      {screen === "level" && <LevelSelection onSelect={selectLevel} />}
+      {screen === "level" && <LevelSelection onSelect={selectLevel} onSkip={onUnlock} />}
       {screen === "question" && currentQuestion && level && (
         <QuestionScreen
           level={level} question={currentQuestion}
