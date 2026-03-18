@@ -325,6 +325,7 @@ function LockOverlay({ onUnlock }: { onUnlock: () => void }) {
       setShowMeme(true);
 
       if (lifeResult.triggerCooldown) {
+        playOutOfLivesSound();
         const until = Date.now() + COOLDOWN_SECONDS * 1000;
         setCooldownEnd(until);
         sessionStorage.setItem(STORAGE_KEYS.cooldownUntil, String(until));
