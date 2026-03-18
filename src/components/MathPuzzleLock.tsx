@@ -477,6 +477,11 @@ function LevelSelection({ onSelect, onSkip }: { onSelect: (l: Level) => void; on
         })}
       </div>
 
+      <button onClick={onSkip}
+        className="w-full mt-6 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/70 text-sm font-medium transition-all">
+        Skip Math Challenge →
+      </button>
+
       <StatsPanel />
     </div>
   );
