@@ -409,8 +409,7 @@ function LockOverlay({ onUnlock }: { onUnlock: () => void }) {
   );
 }
 
-// ═══════════════ LEVEL SELECTION ═══════════════
-function LevelSelection({ onSelect }: { onSelect: (l: Level) => void }) {
+function LevelSelection({ onSelect, onSkip }: { onSelect: (l: Level) => void; onSkip: () => void }) {
   const xp = getXP();
   const rank = getRank(xp);
   const streak = getStreak();
