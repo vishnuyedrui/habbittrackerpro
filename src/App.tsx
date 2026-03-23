@@ -9,11 +9,11 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { CommandPalette } from "./components/CommandPalette";
 import { BugReportButton } from "./components/BugReportButton";
-import { MathPuzzleLock } from "./components/MathPuzzleLock";
 import GradeCalculator from "./pages/GradeCalculator";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { ExternalPage } from "./components/ExternalPage";
+import { FloatingCoffee } from "./components/FloatingCoffee";
 import { CoffeePopup } from "./components/CoffeePopup";
 import Learn from "./pages/Learn";
 import LearnSubject from "./pages/LearnSubject";
@@ -37,7 +37,6 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <TooltipProvider>
-        <MathPuzzleLock>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -66,11 +65,10 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Footer />
-          
+          <FloatingCoffee />
           <CoffeePopup />
           <BugReportButton />
         </BrowserRouter>
-        </MathPuzzleLock>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
