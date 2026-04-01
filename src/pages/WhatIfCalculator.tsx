@@ -152,29 +152,6 @@ export default function WhatIfCalculator() {
   const milestone = projectedCGPA !== null ? getMilestoneMessage(projectedCGPA, gradingScale) : null;
   const delta = projectedCGPA !== null ? projectedCGPA - currentCGPA : null;
 
-  // Scenarios
-  const scenarios = useMemo(() => {
-    const offsets = [-1.0, 0, 1.0];
-    const labels = [
-      { name: "Pessimistic", emoji: "😴" },
-      { name: "Realistic", emoji: "😐" },
-      { name: "Optimistic", emoji: "🔥" },
-    ];
-    return labels.map((l, i) => {
-      const adjusted = futureSemesters.map(s => ({
-        ...s,
-        sgpa: Math.max(0, Math.min(gradingScale, s.sgpa + offsets[i])),
-      }));
-      const cgpa = calcCGPA(currentCGPA, completedCredits, adjusted);
-      return { ...l, cgpa, semesters: adjusted };
-    });
-  }, [currentCGPA, completedCredits, futureSemesters, gradingScale]);
-
-  const applyScenario = (semesters: FutureSemester[]) => {
-    setFutureSemesters(semesters);
-    toast.success("Scenario applied!");
-  };
-
   // Reverse calculator
   const requiredSGPA = useMemo(() => {
     const futureCredits = futureSemesters.reduce((s, f) => s + f.credits, 0);
