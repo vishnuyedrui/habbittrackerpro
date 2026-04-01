@@ -186,7 +186,7 @@ export function createNewCourse(): Course {
   return {
     id: crypto.randomUUID(),
     name: "",
-    credits: 3,
+    credits: 0,
     assessments: createDefaultAssessments(),
     wgp: null,
     finalGradePoint: null,

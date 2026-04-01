@@ -30,6 +30,8 @@ import AdminVideos from "./pages/admin/AdminVideos";
 import GitamResults from "./pages/GitamResults";
 import WhatIfCalculator from "./pages/WhatIfCalculator";
 import AttendanceCalculator from "./pages/AttendanceCalculator";
+import Payments from "./pages/Payments";
+import { PaymentPopup } from "./components/PaymentPopup";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,7 @@ const App = () => (
             <Route path="/" element={<ErrorBoundary><GradeCalculator /></ErrorBoundary>} />
             <Route path="/what-if" element={<ErrorBoundary><WhatIfCalculator /></ErrorBoundary>} />
             <Route path="/attendance" element={<ErrorBoundary><AttendanceCalculator /></ErrorBoundary>} />
+            <Route path="/payments" element={<ErrorBoundary><Payments /></ErrorBoundary>} />
             <Route path="/habits" element={<ErrorBoundary><Index /></ErrorBoundary>} />
             <Route path="/learn" element={<ErrorBoundary><Learn /></ErrorBoundary>} />
             <Route path="/learn/:subjectId" element={<ErrorBoundary><LearnSubject /></ErrorBoundary>} />
@@ -66,6 +69,7 @@ const App = () => (
           </Routes>
           <Footer />
           {/* FloatingCoffee and CoffeePopup removed */}
+          <PaymentPopup />
           <BugReportButton />
         </BrowserRouter>
       </TooltipProvider>
