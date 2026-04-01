@@ -69,6 +69,7 @@ const App = () => (
           </Routes>
           <Footer />
           {/* FloatingCoffee and CoffeePopup removed */}
+          <PaymentPopup />
           <BugReportButton />
         </BrowserRouter>
       </TooltipProvider>
